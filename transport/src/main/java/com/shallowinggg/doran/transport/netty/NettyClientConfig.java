@@ -20,9 +20,9 @@ public class NettyClientConfig {
     /**
      * Worker thread number
      */
-    private int clientWorkerThreads = 4;
+    private int clientWorkerThreads = 2;
     private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
-    private int clientOnewaySemaphoreValue = NettySystemConfig.CLIENT_ONEWAY_SEMAPHORE_VALUE;
+    private int clientOneWaySemaphoreValue = NettySystemConfig.CLIENT_ONEWAY_SEMAPHORE_VALUE;
     private int clientAsyncSemaphoreValue = NettySystemConfig.CLIENT_ASYNC_SEMAPHORE_VALUE;
     private int connectTimeoutMillis = 3000;
     private long channelNotActiveInterval = 1000 * 60;
@@ -56,12 +56,12 @@ public class NettyClientConfig {
         this.clientWorkerThreads = clientWorkerThreads;
     }
 
-    public int getClientOnewaySemaphoreValue() {
-        return clientOnewaySemaphoreValue;
+    public int getClientOneWaySemaphoreValue() {
+        return clientOneWaySemaphoreValue;
     }
 
-    public void setClientOnewaySemaphoreValue(int clientOnewaySemaphoreValue) {
-        this.clientOnewaySemaphoreValue = clientOnewaySemaphoreValue;
+    public void setClientOneWaySemaphoreValue(int clientOneWaySemaphoreValue) {
+        this.clientOneWaySemaphoreValue = clientOneWaySemaphoreValue;
     }
 
     public int getConnectTimeoutMillis() {
