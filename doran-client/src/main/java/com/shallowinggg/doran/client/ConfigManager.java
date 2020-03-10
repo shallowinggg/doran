@@ -1,15 +1,9 @@
 package com.shallowinggg.doran.client;
 
 import com.shallowinggg.doran.common.MqConfig;
-import com.shallowinggg.doran.common.RequestMqConfigRequestHeader;
-import com.shallowinggg.doran.common.ThreadFactoryImpl;
-import com.shallowinggg.doran.transport.RemotingClient;
-import com.shallowinggg.doran.transport.netty.NettyClientConfig;
-import com.shallowinggg.doran.transport.netty.NettyRemotingClient;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manager {@link MqConfig}s for one client.
@@ -21,17 +15,22 @@ public class ConfigManager {
     private final Map<String, MqConfig> configMap;
 
 
-
-    ConfigManager(final ConfigController controller) {
+    public ConfigManager(final ConfigController controller) {
         this.controller = controller;
         this.configMap = new ConcurrentHashMap<>(16);
     }
 
-    public MqConfig getConfig(String topicName) {
-        if(configMap.containsKey(topicName)) {
-            return configMap.get(topicName);
+    public MqConfig getConfig(String configName) {
+        if(configMap.containsKey(configName)) {
+            return configMap.get(configName);
         }
-        return null;
+
+        // 并发控制，避免多个线程同时请求同一个配置
+        MqConfig config = controller.getClientApiImpl().requestConfig(configName);
+        if(config != null) {
+            configMap.put(configName, config);
+        }
+        return config;
     }
 
 

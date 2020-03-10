@@ -13,17 +13,15 @@ import java.util.concurrent.*;
  * @author shallowinggg
  */
 public class ClientApiImpl {
-    private final ConfigController controller;
     private final RemotingClient client;
     private final ClientManageProcessor processor;
     private final ClientConfig clientConfig;
     private ScheduledExecutorService heartBeatExecutor;
+    private ExecutorService requestConfigExecutor;
 
-    public ClientApiImpl(final ConfigController controller,
-                         final NettyClientConfig nettyClientConfig,
+    public ClientApiImpl(final NettyClientConfig nettyClientConfig,
                          final ClientManageProcessor processor,
                          final ClientConfig clientConfig) {
-        this.controller = controller;
         this.clientConfig = clientConfig;
         this.processor = processor;
         this.client = new NettyRemotingClient(nettyClientConfig);
@@ -32,9 +30,23 @@ public class ClientApiImpl {
     public void init() {
         this.heartBeatExecutor = new ScheduledThreadPoolExecutor(1,
                 new ThreadFactoryImpl("heartBeat_", true));
-        this.heartBeatExecutor.schedule(this::sendHeartBeat,
-                clientConfig.getHeartBeatServerInterval(), TimeUnit.MILLISECONDS);
+        this.requestConfigExecutor = new ThreadPoolExecutor(clientConfig.getRequestConfigThreadNum(),
+                clientConfig.getRequestConfigMaxThreadNum(), 1, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(32),
+                new ThreadFactoryImpl("requestMQConfig_"));
         this.registerProcessor();
+    }
+
+    public void start() {
+        // 启动各种组件
+        // 与server建立连接
+        // 获取ip + pid
+        this.heartBeatExecutor.scheduleAtFixedRate(this::sendHeartBeat,
+                0, clientConfig.getHeartBeatServerInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    public void shutdown() {
+
     }
 
     public void registerProcessor() {
@@ -42,7 +54,7 @@ public class ClientApiImpl {
     }
 
     public void sendHeartBeat() {
-
+        // 发送本机ip以及pid，以便失联以后server能够报错定位
     }
 
     public MqConfig requestConfig(String configName) {

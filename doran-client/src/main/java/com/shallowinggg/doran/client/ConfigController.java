@@ -1,14 +1,6 @@
 package com.shallowinggg.doran.client;
 
-import com.shallowinggg.doran.common.ThreadFactoryImpl;
-import com.shallowinggg.doran.transport.RemotingClient;
 import com.shallowinggg.doran.transport.netty.NettyClientConfig;
-import com.shallowinggg.doran.transport.netty.NettyRemotingClient;
-
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author shallowinggg
@@ -22,6 +14,15 @@ public class ConfigController {
         this.configManager = new ConfigManager(this);
 
         ClientManageProcessor processor = new ClientManageProcessor(configManager);
-        this.clientApiImpl = new ClientApiImpl(this, config, processor, clientConfig);
+        this.clientApiImpl = new ClientApiImpl(config, processor, clientConfig);
+    }
+
+
+    public ClientApiImpl getClientApiImpl() {
+        return clientApiImpl;
+    }
+
+    public ConfigManager getConfigManager() {
+        return configManager;
     }
 }
