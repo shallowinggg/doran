@@ -1,4 +1,4 @@
-package com.shallowinggg.doran.client;
+package com.shallowinggg.doran.common;
 
 import com.shallowinggg.doran.transport.CommandCustomHeader;
 import com.shallowinggg.doran.transport.annotation.CFNotNull;

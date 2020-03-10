@@ -1,4 +1,4 @@
-package com.shallowinggg.doran.client;
+package com.shallowinggg.doran.common;
 
 /**
  * This class is provided to store basic MQ configurations.

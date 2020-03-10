@@ -1,5 +1,6 @@
 package com.shallowinggg.doran.client;
 
+import com.shallowinggg.doran.common.RequestCode;
 import com.shallowinggg.doran.transport.netty.NettyRequestProcessor;
 import com.shallowinggg.doran.transport.protocol.RemotingCommand;
 import io.netty.channel.ChannelHandlerContext;
