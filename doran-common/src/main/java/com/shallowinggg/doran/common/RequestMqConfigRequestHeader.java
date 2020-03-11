@@ -10,20 +10,20 @@ import com.shallowinggg.doran.transport.exception.RemotingCommandException;
  */
 public class RequestMqConfigRequestHeader implements CommandCustomHeader {
     @CFNotNull
-    private String topicName;
+    private String configName;
 
     @Override
     public void checkFields() throws RemotingCommandException {
-        if(StringUtils.hasText(topicName)) {
-            throw new RemotingCommandException("topicName must has text");
+        if(!StringUtils.hasText(configName)) {
+            throw new RemotingCommandException("configName must has text");
         }
     }
 
-    public String getTopicName() {
-        return topicName;
+    public String getConfigName() {
+        return configName;
     }
 
-    public void setTopicName(String topicName) {
-        this.topicName = topicName;
+    public void setConfigName(String configName) {
+        this.configName = configName;
     }
 }

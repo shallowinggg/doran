@@ -28,6 +28,13 @@ public class ClientConfig {
      */
     private int requestConfigMaxThreadNum = 10;
 
+    /**
+     * Timeout in milliseconds for sync invokable.
+     */
+    private int timeoutMillis = 5000;
+
+    private int retryTimesWhenNetworkFluctuation = 3;
+
     public String getServerAddr() {
         return serverAddr;
     }
@@ -74,5 +81,13 @@ public class ClientConfig {
 
     public void setRequestConfigMaxThreadNum(int requestConfigMaxThreadNum) {
         this.requestConfigMaxThreadNum = requestConfigMaxThreadNum;
+    }
+
+    public int getTimeoutMillis() {
+        return timeoutMillis;
+    }
+
+    public void setTimeoutMillis(int timeoutMillis) {
+        this.timeoutMillis = timeoutMillis;
     }
 }

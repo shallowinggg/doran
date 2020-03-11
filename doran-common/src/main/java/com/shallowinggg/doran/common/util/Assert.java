@@ -45,4 +45,10 @@ public class Assert {
             throw new AssertionError("expected: " + expected + ", actual: " + actual);
         }
     }
+
+    public static void hasText(CharSequence c) {
+        if(!StringUtils.hasText(c)) {
+            throw new IllegalArgumentException("[Assertion failed] - this String argument must have text; it must not be null, empty, or blank");
+        }
+    }
 }

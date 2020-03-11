@@ -17,6 +17,13 @@
 package com.shallowinggg.doran.transport.protocol;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.shallowinggg.doran.transport.CommandCustomHeader;
+import com.shallowinggg.doran.transport.annotation.CFNotNull;
+import com.shallowinggg.doran.transport.common.RemotingHelper;
+import com.shallowinggg.doran.transport.exception.RemotingCommandException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -24,13 +31,6 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.shallowinggg.doran.transport.CommandCustomHeader;
-import com.shallowinggg.doran.transport.annotation.CFNotNull;
-import com.shallowinggg.doran.transport.common.RemotingHelper;
-import com.shallowinggg.doran.transport.exception.RemotingCommandException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RemotingCommand {
     public static final String SERIALIZE_TYPE_PROPERTY = "doran.serialize.type";
@@ -230,8 +230,8 @@ public class RemotingCommand {
         this.customHeader = customHeader;
     }
 
-    public CommandCustomHeader decodeCommandCustomHeader(
-        Class<? extends CommandCustomHeader> classHeader) throws RemotingCommandException {
+    public <T extends CommandCustomHeader> T decodeCommandCustomHeader(Class<T> classHeader)
+            throws RemotingCommandException {
         CommandCustomHeader objectHeader;
         try {
             objectHeader = classHeader.newInstance();
@@ -285,7 +285,7 @@ public class RemotingCommand {
             objectHeader.checkFields();
         }
 
-        return objectHeader;
+        return classHeader.cast(objectHeader);
     }
 
     private Field[] getClazzFields(Class<? extends CommandCustomHeader> classHeader) {

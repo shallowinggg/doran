@@ -87,6 +87,19 @@ public class MqConfig {
         setTimestamp(other.getTimestamp());
     }
 
+    public static MqConfig obtainFromMqConfigHeader(MqConfigHeader header) {
+        MqConfig config = new MqConfig();
+        config.setName(header.getName());
+        config.setUrls(header.getUrls());
+        config.setUsername(header.getUsername());
+        config.setPassword(header.getPassword());
+        config.setDomain(Domain.valueOf(header.getDomain()));
+        config.setDomainName(header.getDomainName());
+        config.setThreadNum(header.getThreadNum());
+        config.setTimestamp(header.getTimestamp());
+        return config;
+    }
+
     public boolean isChanged(long lastUpdateTime) {
         return lastUpdateTime < this.timestamp;
     }
