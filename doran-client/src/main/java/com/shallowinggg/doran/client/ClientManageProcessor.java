@@ -18,7 +18,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         switch (request.getCode()) {
-            case RequestCode.SEND_MQ_CONFIG:
+            case RequestCode.UPDATE_MQ_CONFIG:
             case RequestCode.HEART_BEAT:
             default:
         }

@@ -1,5 +1,10 @@
 package com.shallowinggg.doran.client;
 
+import com.shallowinggg.doran.common.util.SystemUtils;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 /**
  * @author shallowinggg
  */
@@ -7,6 +12,10 @@ public class ClientConfig {
     private String serverAddr;
     private String username;
     private String password;
+
+    private String clientId = createClientId();
+
+    private String clientName = localHostName();
 
     /**
      * Heartbeat interval in milliseconds with server
@@ -34,6 +43,39 @@ public class ClientConfig {
     private int timeoutMillis = 5000;
 
     private int retryTimesWhenNetworkFluctuation = 3;
+
+    private static String localHostName() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            // do nothing
+        }
+
+        return "DEFAULT_CLIENT";
+    }
+
+    /**
+     * Create the unique client id, format "ip:pid".
+     *
+     * @return client id
+     */
+    private static String createClientId() {
+        byte[] ip = SystemUtils.getIp();
+        if (ip == null) {
+            ip = SystemUtils.createFakeIp();
+        }
+
+        int pid = SystemUtils.getPid();
+        StringBuilder clientId = new StringBuilder(15 + 1 + 5);
+        for (int i = 0, len = ip.length; i < len; ++i) {
+            clientId.append(ip[i]);
+            if (i != len - 1) {
+                clientId.append(".");
+            }
+        }
+        clientId.append(':').append(pid);
+        return clientId.toString();
+    }
 
     public String getServerAddr() {
         return serverAddr;
@@ -89,5 +131,21 @@ public class ClientConfig {
 
     public void setTimeoutMillis(int timeoutMillis) {
         this.timeoutMillis = timeoutMillis;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
     }
 }

@@ -1,5 +1,6 @@
 package com.shallowinggg.doran.client;
 
+import com.codahale.metrics.MetricRegistry;
 import com.shallowinggg.doran.common.MqConfig;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
 import com.shallowinggg.doran.common.util.Assert;
@@ -19,12 +20,14 @@ public class ConfigController {
 
     private final ConfigManager configManager;
     private final ClientApiImpl clientApiImpl;
+    private final MetricRegistry metricRegistry;
     private ScheduledExecutorService heartBeatExecutor;
     private final ClientConfig clientConfig;
 
     public ConfigController(final NettyClientConfig config, final ClientConfig clientConfig) {
         this.configManager = new ConfigManager(this);
         this.clientApiImpl = new ClientApiImpl(this, config);
+        this.metricRegistry = new MetricRegistry();
         this.clientConfig = clientConfig;
     }
 
@@ -35,16 +38,24 @@ public class ConfigController {
     }
 
     public void start() {
+        this.registerClient();
         this.heartBeatExecutor.scheduleAtFixedRate(() -> {
             try {
                 this.sendHeartBeat();
             } catch (Throwable t) {
                 LOGGER.error("Send heart beat fail", t);
             }
-        }, 0, clientConfig.getHeartBeatServerInterval(), TimeUnit.MILLISECONDS);
+        }, 10 * 1000, clientConfig.getHeartBeatServerInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    private void registerClient() {
+        this.clientApiImpl.registerClient(clientConfig.getClientId(),
+                clientConfig.getClientName(),
+                clientConfig.getTimeoutMillis());
     }
 
     private void sendHeartBeat() {
+        // 发送已开启的生产者，消费者信息，以及其发送消费消息的数量
     }
 
     public MqConfig getMqConfig(String configName) {

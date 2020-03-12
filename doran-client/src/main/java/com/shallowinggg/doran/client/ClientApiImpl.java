@@ -5,7 +5,6 @@ import com.shallowinggg.doran.common.exception.ConfigNotExistException;
 import com.shallowinggg.doran.common.exception.NetworkException;
 import com.shallowinggg.doran.common.exception.SystemException;
 import com.shallowinggg.doran.common.exception.UnexpectedResponseException;
-import com.shallowinggg.doran.common.util.SystemUtils;
 import com.shallowinggg.doran.transport.RemotingClient;
 import com.shallowinggg.doran.transport.exception.RemotingCommandException;
 import com.shallowinggg.doran.transport.exception.RemotingConnectException;
@@ -18,6 +17,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author shallowinggg
@@ -26,18 +29,20 @@ public class ClientApiImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientApiImpl.class);
     private final ConfigController controller;
     private final RemotingClient client;
-    private final String clientId;
+    private ExecutorService clientOuterExecutor;
     private String serverAddr;
 
     public ClientApiImpl(final ConfigController controller,
                          final NettyClientConfig nettyClientConfig) {
         this.controller = controller;
         this.client = new NettyRemotingClient(nettyClientConfig);
-        this.clientId = createClientId();
     }
 
     public void init() {
         this.registerProcessor();
+        this.clientOuterExecutor = new ThreadPoolExecutor(2, 2,
+                1, TimeUnit.MINUTES, new ArrayBlockingQueue<>(32),
+                new ThreadFactoryImpl("clientApi_"));
     }
 
     public void start() {
@@ -50,12 +55,36 @@ public class ClientApiImpl {
 
     public void registerProcessor() {
         ClientManageProcessor processor = new ClientManageProcessor(this.controller);
-        this.client.registerProcessor(RequestCode.SEND_MQ_CONFIG, processor, null);
+        this.client.registerProcessor(RequestCode.UPDATE_MQ_CONFIG, processor, null);
     }
 
     public void updateServerAddress(String serverAddress) {
         this.serverAddr = serverAddress;
         this.client.updateNameServerAddressList(Collections.singletonList(serverAddress));
+    }
+
+    public void registerClient(final String clientId, final String clientName, int timeoutMillis) {
+        final String serverAddr = this.serverAddr;
+        final RegisterClientRequestHeader header = new RegisterClientRequestHeader();
+        header.setClientId(clientId);
+        header.setClientName(clientName);
+
+        clientOuterExecutor.execute(() -> {
+            RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.REGISTER_CLIENT, header);
+            try {
+                RemotingCommand response = this.client.invokeSync(serverAddr, request, timeoutMillis);
+                switch (response.getCode()) {
+                    case ResponseCode.SUCCESS:
+                        LOGGER.info("Register client {} to server {} success", clientId, serverAddr);
+                        break;
+                    default:
+                        throw new UnexpectedResponseException(response.getCode(), "REGISTER_CLIENT");
+                }
+            } catch (InterruptedException | RemotingConnectException |
+                    RemotingSendRequestException | RemotingTimeoutException e) {
+                LOGGER.error("Register client {} to server {} fail", clientId, serverAddr, e);
+            }
+        });
     }
 
     public void sendHeartBeat() {
@@ -91,27 +120,5 @@ public class ClientApiImpl {
         }
     }
 
-    /**
-     * Create the unique client id, format "ip:pid".
-     *
-     * @return client id
-     */
-    private String createClientId() {
-        byte[] ip = SystemUtils.getIp();
-        if (ip == null) {
-            ip = SystemUtils.createFakeIP();
-        }
-
-        int pid = SystemUtils.getPid();
-        StringBuilder clientId = new StringBuilder(15 + 1 + 5);
-        for (int i = 0, len = ip.length; i < len; ++i) {
-            clientId.append(ip[i]);
-            if (i != len - 1) {
-                clientId.append(".");
-            }
-        }
-        clientId.append(':').append(pid);
-        return clientId.toString();
-    }
 
 }

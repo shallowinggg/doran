@@ -122,13 +122,13 @@ public class SystemUtils {
      *
      * @return fake ip
      */
-    public static byte[] createFakeIP() {
+    public static byte[] createFakeIp() {
         ByteBuffer bb = ByteBuffer.allocate(8);
         bb.putLong(System.currentTimeMillis());
         bb.position(4);
-        byte[] fakeIP = new byte[4];
-        bb.get(fakeIP);
-        return fakeIP;
+        byte[] fakeIp = new byte[4];
+        bb.get(fakeIp);
+        return fakeIp;
     }
 
     private SystemUtils() {
