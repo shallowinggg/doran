@@ -3,6 +3,7 @@ package com.shallowinggg.doran.client;
 import com.shallowinggg.doran.common.MqConfig;
 import com.shallowinggg.doran.common.exception.ConfigNotExistException;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -15,6 +16,10 @@ public class ConfigManager {
     private static final MqConfig NON_EXIST_CONFIG = new MqConfig();
 
     private final ConfigController controller;
+
+    /**
+     * configName -> MqConfig
+     */
     private final Map<String, MqConfig> configMap;
 
 
@@ -53,6 +58,11 @@ public class ConfigManager {
         }
     }
 
+    public void registerMqConfigs(List<MqConfig> mqConfigs) {
+        for(MqConfig config : mqConfigs) {
+            this.configMap.putIfAbsent(config.getName(), config);
+        }
+    }
 
 
 

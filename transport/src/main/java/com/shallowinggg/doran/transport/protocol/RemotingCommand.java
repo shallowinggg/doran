@@ -25,7 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -120,9 +122,19 @@ public class RemotingCommand {
 
         if (classHeader != null) {
             try {
-                cmd.customHeader = classHeader.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
-                return null;
+                Constructor<? extends CommandCustomHeader> defaultConstructor = classHeader.getDeclaredConstructor();
+                defaultConstructor.setAccessible(true);
+                cmd.customHeader = defaultConstructor.newInstance();
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException("No default constructor found", e);
+            } catch (LinkageError e) {
+                throw new RuntimeException("Unresolvable class definition", e);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("Is the constructor accessible?", e);
+            } catch (InstantiationException e) {
+                throw new RuntimeException("Is it an abstract class?", e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException("Constructor threw exception", e);
             }
         }
 

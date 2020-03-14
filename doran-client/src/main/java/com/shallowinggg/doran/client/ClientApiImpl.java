@@ -13,10 +13,12 @@ import com.shallowinggg.doran.transport.exception.RemotingTimeoutException;
 import com.shallowinggg.doran.transport.netty.NettyClientConfig;
 import com.shallowinggg.doran.transport.netty.NettyRemotingClient;
 import com.shallowinggg.doran.transport.protocol.RemotingCommand;
+import com.shallowinggg.doran.transport.protocol.RemotingSerializable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -63,6 +65,22 @@ public class ClientApiImpl {
         this.client.updateNameServerAddressList(Collections.singletonList(serverAddress));
     }
 
+    /**
+     * Register current client to server with its id and name.
+     * The main purpose of this method is creating connection
+     * with server in advance.
+     * <p>
+     * This method will be invoked async, if there are any errors occur
+     * in this process, it only prints log. The process that send
+     * heart beat later will does this again.
+     * <p>
+     * If the client is fail in accident and recovers immediately,
+     * this method can retrieve all mq configs request before.
+     *
+     * @param clientId      client's id to be registered
+     * @param clientName    client' name to be registered
+     * @param timeoutMillis transport timeout millis
+     */
     public void registerClient(final String clientId, final String clientName, int timeoutMillis) {
         final String serverAddr = this.serverAddr;
         final RegisterClientRequestHeader header = new RegisterClientRequestHeader();
@@ -76,6 +94,12 @@ public class ClientApiImpl {
                 switch (response.getCode()) {
                     case ResponseCode.SUCCESS:
                         LOGGER.info("Register client {} to server {} success", clientId, serverAddr);
+                        RegisterClientResponseHeader responseHeader = response.decodeCommandCustomHeader(RegisterClientResponseHeader.class);
+                        int configNums = responseHeader.getHoldingMqConfigNums();
+                        if (configNums != 0) {
+                            List<MqConfig> configs = RemotingSerializable.decodeArray(response.getBody(), MqConfig.class);
+                            this.controller.getConfigManager().registerMqConfigs(configs);
+                        }
                         break;
                     default:
                         throw new UnexpectedResponseException(response.getCode(), "REGISTER_CLIENT");
@@ -83,6 +107,8 @@ public class ClientApiImpl {
             } catch (InterruptedException | RemotingConnectException |
                     RemotingSendRequestException | RemotingTimeoutException e) {
                 LOGGER.error("Register client {} to server {} fail", clientId, serverAddr, e);
+            } catch (RemotingCommandException e) {
+                LOGGER.error("Parse RegisterClientResponseHeader's body fail", e);
             }
         });
     }

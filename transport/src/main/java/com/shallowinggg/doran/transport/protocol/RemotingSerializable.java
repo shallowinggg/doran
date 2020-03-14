@@ -17,8 +17,10 @@
 package com.shallowinggg.doran.transport.protocol;
 
 import com.alibaba.fastjson.JSON;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public abstract class RemotingSerializable {
     private final static Charset CHARSET_UTF8 = StandardCharsets.UTF_8;
@@ -55,5 +57,10 @@ public abstract class RemotingSerializable {
 
     public String toJson(final boolean prettyFormat) {
         return toJson(this, prettyFormat);
+    }
+
+    public static <T> List<T> decodeArray(final byte[] data, Class<T> clazz) {
+        final String json = new String(data, CHARSET_UTF8);
+        return JSON.parseArray(json, clazz);
     }
 }

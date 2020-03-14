@@ -12,7 +12,7 @@ package com.shallowinggg.doran.common;
  *
  * @author shallowinggg
  */
-public class MqConfig {
+public class MqConfig implements Cloneable {
 
     public static final String DELIMITER = ",";
 
@@ -22,7 +22,7 @@ public class MqConfig {
     private String name;
 
     /**
-     * Mq server urls, you can specify one or more urls and
+     * MQ server urls, you can specify one or more urls and
      * separated by {@link #DELIMITER}. It must include server
      * host and port.
      * e.g. "127.0.0.1:8161, 127.0.0.1:8162".
@@ -34,12 +34,12 @@ public class MqConfig {
     private String urls;
 
     /**
-     * Mq server username
+     * MQ server username
      */
     private String username;
 
     /**
-     * Mq server password
+     * MQ server password
      */
     private String password;
 
@@ -167,5 +167,19 @@ public class MqConfig {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    @Override
+    public String toString() {
+        return "MqConfig{" +
+                "name='" + name + '\'' +
+                ", urls='" + urls + '\'' +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", domain=" + domain +
+                ", domainName='" + domainName + '\'' +
+                ", threadNum=" + threadNum +
+                ", timestamp=" + timestamp +
+                '}';
     }
 }
