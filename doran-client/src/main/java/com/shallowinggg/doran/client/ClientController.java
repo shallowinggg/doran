@@ -15,8 +15,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author shallowinggg
  */
-public class ConfigController {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigController.class);
+public class ClientController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientController.class);
 
     private final ConfigManager configManager;
     private final ClientApiImpl clientApiImpl;
@@ -24,7 +24,7 @@ public class ConfigController {
     private ScheduledExecutorService heartBeatExecutor;
     private final ClientConfig clientConfig;
 
-    public ConfigController(final NettyClientConfig config, final ClientConfig clientConfig) {
+    public ClientController(final NettyClientConfig config, final ClientConfig clientConfig) {
         this.configManager = new ConfigManager(this);
         this.clientApiImpl = new ClientApiImpl(this, config);
         this.metricRegistry = new MetricRegistry();

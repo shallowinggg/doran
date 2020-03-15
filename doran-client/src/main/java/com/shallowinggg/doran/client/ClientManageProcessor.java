@@ -9,9 +9,9 @@ import io.netty.channel.ChannelHandlerContext;
  * @author shallowinggg
  */
 public class ClientManageProcessor implements NettyRequestProcessor {
-    private final ConfigController controller;
+    private final ClientController controller;
 
-    public ClientManageProcessor(ConfigController controller) {
+    public ClientManageProcessor(ClientController controller) {
         this.controller = controller;
     }
 

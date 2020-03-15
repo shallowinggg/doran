@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConfigManager {
     private static final MqConfig NON_EXIST_CONFIG = new MqConfig();
 
-    private final ConfigController controller;
+    private final ClientController controller;
 
     /**
      * configName -> MqConfig
@@ -23,7 +23,7 @@ public class ConfigManager {
     private final Map<String, MqConfig> configMap;
 
 
-    public ConfigManager(final ConfigController controller) {
+    public ConfigManager(final ClientController controller) {
         this.controller = controller;
         this.configMap = new ConcurrentHashMap<>(16);
     }

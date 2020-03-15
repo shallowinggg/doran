@@ -29,12 +29,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class ClientApiImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientApiImpl.class);
-    private final ConfigController controller;
+    private final ClientController controller;
     private final RemotingClient client;
     private ExecutorService clientOuterExecutor;
     private String serverAddr;
 
-    public ClientApiImpl(final ConfigController controller,
+    public ClientApiImpl(final ClientController controller,
                          final NettyClientConfig nettyClientConfig) {
         this.controller = controller;
         this.client = new NettyRemotingClient(nettyClientConfig);

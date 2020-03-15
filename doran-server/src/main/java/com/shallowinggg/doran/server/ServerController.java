@@ -42,7 +42,7 @@ public class ServerController {
         this.server = new NettyRemotingServer(nettyServerConfig);
         this.serverOuterApi = new ServerOuterApi(this, nettyClientConfig);
         this.clientManager = new ClientManager(this);
-        this.mqConfigManager = new MqConfigManager();
+        this.mqConfigManager = new MqConfigManager(this);
     }
 
     public void init() {
