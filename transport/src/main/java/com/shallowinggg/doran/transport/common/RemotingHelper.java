@@ -16,24 +16,13 @@
  */
 package com.shallowinggg.doran.transport.common;
 
-import com.shallowinggg.doran.transport.exception.RemotingConnectException;
-import com.shallowinggg.doran.transport.exception.RemotingSendRequestException;
-import com.shallowinggg.doran.transport.exception.RemotingTimeoutException;
-import com.shallowinggg.doran.transport.protocol.RemotingCommand;
 import io.netty.channel.Channel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 
 public class RemotingHelper {
-    public static final String ROCKETMQ_REMOTING = "RocketmqRemoting";
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ROCKETMQ_REMOTING);
+    public static final String DORAN_REMOTING = "DoranRemoting";
 
     public static String exceptionSimpleDesc(final Throwable e) {
         StringBuilder sb = new StringBuilder();
@@ -54,98 +43,6 @@ public class RemotingHelper {
     public static SocketAddress string2SocketAddress(final String addr) {
         String[] s = addr.split(":");
         return new InetSocketAddress(s[0], Integer.parseInt(s[1]));
-    }
-
-    public static RemotingCommand invokeSync(final String addr, final RemotingCommand request,
-                                             final long timeoutMillis) throws InterruptedException, RemotingConnectException,
-            RemotingSendRequestException, RemotingTimeoutException {
-        long beginTime = System.currentTimeMillis();
-        SocketAddress socketAddress = RemotingUtil.string2SocketAddress(addr);
-        SocketChannel socketChannel = RemotingUtil.connect(socketAddress);
-        if (socketChannel != null) {
-            boolean sendRequestOK = false;
-
-            try {
-
-                socketChannel.configureBlocking(true);
-
-                //bug fix  http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4614802
-                socketChannel.socket().setSoTimeout((int) timeoutMillis);
-
-                ByteBuffer byteBufferRequest = request.encode();
-                while (byteBufferRequest.hasRemaining()) {
-                    int length = socketChannel.write(byteBufferRequest);
-                    if (length > 0) {
-                        if (byteBufferRequest.hasRemaining()) {
-                            if ((System.currentTimeMillis() - beginTime) > timeoutMillis) {
-
-                                throw new RemotingSendRequestException(addr);
-                            }
-                        }
-                    } else {
-                        throw new RemotingSendRequestException(addr);
-                    }
-
-                    Thread.sleep(1);
-                }
-
-                sendRequestOK = true;
-
-                ByteBuffer byteBufferSize = ByteBuffer.allocate(4);
-                while (byteBufferSize.hasRemaining()) {
-                    int length = socketChannel.read(byteBufferSize);
-                    if (length > 0) {
-                        if (byteBufferSize.hasRemaining()) {
-                            if ((System.currentTimeMillis() - beginTime) > timeoutMillis) {
-
-                                throw new RemotingTimeoutException(addr, timeoutMillis);
-                            }
-                        }
-                    } else {
-                        throw new RemotingTimeoutException(addr, timeoutMillis);
-                    }
-
-                    Thread.sleep(1);
-                }
-
-                int size = byteBufferSize.getInt(0);
-                ByteBuffer byteBufferBody = ByteBuffer.allocate(size);
-                while (byteBufferBody.hasRemaining()) {
-                    int length = socketChannel.read(byteBufferBody);
-                    if (length > 0) {
-                        if (byteBufferBody.hasRemaining()) {
-                            if ((System.currentTimeMillis() - beginTime) > timeoutMillis) {
-
-                                throw new RemotingTimeoutException(addr, timeoutMillis);
-                            }
-                        }
-                    } else {
-                        throw new RemotingTimeoutException(addr, timeoutMillis);
-                    }
-
-                    Thread.sleep(1);
-                }
-
-                byteBufferBody.flip();
-                return RemotingCommand.decode(byteBufferBody);
-            } catch (IOException e) {
-                LOGGER.error("invokeSync failure", e);
-
-                if (sendRequestOK) {
-                    throw new RemotingTimeoutException(addr, timeoutMillis);
-                } else {
-                    throw new RemotingSendRequestException(addr);
-                }
-            } finally {
-                try {
-                    socketChannel.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        } else {
-            throw new RemotingConnectException(addr);
-        }
     }
 
     public static String parseChannelRemoteAddr(final Channel channel) {

@@ -23,8 +23,8 @@ public enum Domain {
     }
 
     public static Domain parse(String type) {
-        for(Domain domain : values()) {
-            if(domain.type.equals(type)) {
+        for (Domain domain : values()) {
+            if (domain.type.equals(type)) {
                 return domain;
             }
         }

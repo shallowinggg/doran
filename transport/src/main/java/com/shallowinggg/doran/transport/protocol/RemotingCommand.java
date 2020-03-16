@@ -38,14 +38,14 @@ public class RemotingCommand {
     public static final String SERIALIZE_TYPE_PROPERTY = "doran.serialize.type";
     public static final String SERIALIZE_TYPE_ENV = "DORAN_SERIALIZE_TYPE";
     public static final String REMOTING_VERSION_KEY = "doran.version";
-    private static final Logger LOGGER = LoggerFactory.getLogger(RemotingHelper.ROCKETMQ_REMOTING);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemotingHelper.DORAN_REMOTING);
     private static final int RPC_TYPE = 0; // 0, REQUEST_COMMAND
     private static final int RPC_ONEWAY = 1; // 0, RPC
     private static final Map<Class<? extends CommandCustomHeader>, Field[]> CLASS_HASH_MAP =
             new HashMap<>();
     private static final Map<Class<?>, String> CANONICAL_NAME_CACHE = new HashMap<>();
 
-    private static final Map<Field, Boolean> NULLABLE_FIELD_CACHE = new HashMap<Field, Boolean>();
+    private static final Map<Field, Boolean> NULLABLE_FIELD_CACHE = new HashMap<>();
     private static final String STRING_CANONICAL_NAME = String.class.getCanonicalName();
     private static final String DOUBLE_CANONICAL_NAME_1 = Double.class.getCanonicalName();
     private static final String DOUBLE_CANONICAL_NAME_2 = double.class.getCanonicalName();
@@ -113,7 +113,7 @@ public class RemotingCommand {
     }
 
     public static RemotingCommand createResponseCommand(int code, String remark,
-        Class<? extends CommandCustomHeader> classHeader) {
+                                                        Class<? extends CommandCustomHeader> classHeader) {
         RemotingCommand cmd = new RemotingCommand();
         cmd.markResponseType();
         cmd.setCode(code);
@@ -166,7 +166,7 @@ public class RemotingCommand {
             bodyData = new byte[bodyLength];
             byteBuffer.get(bodyData);
         }
-        if(cmd != null) {
+        if (cmd != null) {
             cmd.body = bodyData;
         }
 
@@ -530,7 +530,7 @@ public class RemotingCommand {
 
     public void addExtField(String key, String value) {
         if (null == extFields) {
-            extFields = new HashMap<String, String>();
+            extFields = new HashMap<>();
         }
         extFields.put(key, value);
     }
@@ -538,8 +538,8 @@ public class RemotingCommand {
     @Override
     public String toString() {
         return "RemotingCommand [code=" + code + ", language=" + language + ", version=" + version + ", opaque=" + opaque + ", flag(B)="
-            + Integer.toBinaryString(flag) + ", remark=" + remark + ", extFields=" + extFields + ", serializeTypeCurrentRPC="
-            + serializeTypeCurrentRPC + "]";
+                + Integer.toBinaryString(flag) + ", remark=" + remark + ", extFields=" + extFields + ", serializeTypeCurrentRPC="
+                + serializeTypeCurrentRPC + "]";
     }
 
     public SerializeType getSerializeTypeCurrentRPC() {

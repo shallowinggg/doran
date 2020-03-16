@@ -24,5 +24,5 @@ public enum RemotingCommandType {
     /**
      * 回复
      */
-    RESPONSE_COMMAND;
+    RESPONSE_COMMAND
 }

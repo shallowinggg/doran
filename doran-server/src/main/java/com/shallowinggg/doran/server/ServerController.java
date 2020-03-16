@@ -1,11 +1,16 @@
 package com.shallowinggg.doran.server;
 
 import com.shallowinggg.doran.common.RequestCode;
+import com.shallowinggg.doran.common.ThreadFactoryImpl;
 import com.shallowinggg.doran.transport.netty.NettyClientConfig;
 import com.shallowinggg.doran.transport.netty.NettyRemotingServer;
 import com.shallowinggg.doran.transport.netty.NettyServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author shallowinggg
@@ -35,6 +40,8 @@ public class ServerController {
      */
     private final MqConfigManager mqConfigManager;
 
+    private final ScheduledExecutorService scheduledExecutorService;
+
     public ServerController(final ServerConfig serverConfig,
                             final NettyServerConfig nettyServerConfig,
                             final NettyClientConfig nettyClientConfig) {
@@ -43,6 +50,8 @@ public class ServerController {
         this.serverOuterApi = new ServerOuterApi(this, nettyClientConfig);
         this.clientManager = new ClientManager(this);
         this.mqConfigManager = new MqConfigManager(this);
+        this.scheduledExecutorService = new ScheduledThreadPoolExecutor(1,
+                new ThreadFactoryImpl("serverScheduledThread_"));
     }
 
     public void init() {
@@ -58,6 +67,10 @@ public class ServerController {
 
     public void start() {
         this.server.start();
+
+        this.scheduledExecutorService.scheduleAtFixedRate(this.clientManager::scanInactiveClient,
+                5, 15, TimeUnit.SECONDS);
+
     }
 
     public ClientManager getClientManager() {

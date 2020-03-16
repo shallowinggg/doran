@@ -29,16 +29,7 @@ import com.shallowinggg.doran.transport.exception.RemotingTimeoutException;
 import com.shallowinggg.doran.transport.exception.RemotingTooMuchRequestException;
 import com.shallowinggg.doran.transport.protocol.RemotingCommand;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -46,6 +37,9 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -60,11 +54,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class NettyRemotingClient extends NettyRemotingAbstract implements RemotingClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RemotingHelper.ROCKETMQ_REMOTING);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemotingHelper.DORAN_REMOTING);
 
     private static final long LOCK_TIMEOUT_MILLIS = 3000;
 
@@ -114,7 +105,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
             private final AtomicInteger threadIndex = new AtomicInteger(0);
 
             @Override
-            public Thread newThread(Runnable r) {
+            public Thread newThread(@NotNull Runnable r) {
                 return new Thread(r, "NettyClientPublicExecutor_" + this.threadIndex.incrementAndGet());
             }
         });
@@ -123,7 +114,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
             private final AtomicInteger threadIndex = new AtomicInteger(0);
 
             @Override
-            public Thread newThread(Runnable r) {
+            public Thread newThread(@NotNull Runnable r) {
                 return new Thread(r, String.format("NettyClientSelector_%d", this.threadIndex.incrementAndGet()));
             }
         });
@@ -131,11 +122,17 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         if (nettyClientConfig.isUseTLS()) {
             try {
                 sslContext = TlsHelper.buildSslContext(true);
-                LOGGER.info("SSL enabled for client");
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("SSL enabled for client");
+                }
             } catch (IOException e) {
-                LOGGER.error("Failed to create SSLContext", e);
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Failed to create SSLContext", e);
+                }
             } catch (CertificateException e) {
-                LOGGER.error("Failed to create SSLContext", e);
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Failed to create SSLContext", e);
+                }
                 throw new RuntimeException("Failed to create SSLContext", e);
             }
         }
@@ -156,7 +153,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                     private final AtomicInteger threadIndex = new AtomicInteger(0);
 
                     @Override
-                    public Thread newThread(Runnable r) {
+                    public Thread newThread(@NotNull Runnable r) {
                         return new Thread(r, "NettyClientWorkerThread_" + this.threadIndex.incrementAndGet());
                     }
                 });
@@ -174,9 +171,13 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                         if (nettyClientConfig.isUseTLS()) {
                             if (null != sslContext) {
                                 pipeline.addFirst(defaultEventExecutorGroup, "sslHandler", sslContext.newHandler(ch.alloc()));
-                                LOGGER.info("Prepend SSL handler");
+                                if (LOGGER.isInfoEnabled()) {
+                                    LOGGER.info("Prepend SSL handler");
+                                }
                             } else {
-                                LOGGER.warn("Connections are insecure as SSLContext is null!");
+                                if (LOGGER.isWarnEnabled()) {
+                                    LOGGER.warn("Connections are insecure as SSLContext is null!");
+                                }
                             }
                         }
                         pipeline.addLast(
@@ -193,7 +194,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
             try {
                 NettyRemotingClient.this.scanResponseTable();
             } catch (Throwable e) {
-                LOGGER.error("scanResponseTable exception", e);
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("scanResponseTable exception", e);
+                }
             }
         }, 1000 * 3, 1000, TimeUnit.MILLISECONDS);
 
@@ -221,14 +224,18 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 this.defaultEventExecutorGroup.shutdownGracefully();
             }
         } catch (Exception e) {
-            LOGGER.error("NettyRemotingClient shutdown exception, ", e);
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("NettyRemotingClient shutdown exception, ", e);
+            }
         }
 
         if (this.publicExecutor != null) {
             try {
                 this.publicExecutor.shutdown();
             } catch (Exception e) {
-                LOGGER.error("NettyRemotingServer shutdown exception, ", e);
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("NettyRemotingServer shutdown exception, ", e);
+                }
             }
         }
     }
@@ -246,33 +253,47 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                     boolean removeItemFromTable = true;
                     final ChannelWrapper prevCW = this.channelTables.get(addrRemote);
 
-                    LOGGER.info("closeChannel: begin close the channel[{}] Found: {}", addrRemote, prevCW != null);
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info("closeChannel: begin close the channel[{}] Found: {}", addrRemote, prevCW != null);
+                    }
 
                     if (null == prevCW) {
-                        LOGGER.info("closeChannel: the channel[{}] has been removed from the channel table before", addrRemote);
+                        if (LOGGER.isInfoEnabled()) {
+                            LOGGER.info("closeChannel: the channel[{}] has been removed from the channel table before", addrRemote);
+                        }
                         removeItemFromTable = false;
                     } else if (prevCW.getChannel() != channel) {
-                        LOGGER.info("closeChannel: the channel[{}] has been closed before, and has been created again, nothing to do.",
-                                addrRemote);
+                        if (LOGGER.isInfoEnabled()) {
+                            LOGGER.info("closeChannel: the channel[{}] has been closed before, and has been created again, nothing to do.",
+                                    addrRemote);
+                        }
                         removeItemFromTable = false;
                     }
 
                     if (removeItemFromTable) {
                         this.channelTables.remove(addrRemote);
-                        LOGGER.info("closeChannel: the channel[{}] was removed from channel table", addrRemote);
+                        if (LOGGER.isInfoEnabled()) {
+                            LOGGER.info("closeChannel: the channel[{}] was removed from channel table", addrRemote);
+                        }
                     }
 
                     RemotingUtil.closeChannel(channel);
                 } catch (Exception e) {
-                    LOGGER.error("closeChannel: close the channel exception", e);
+                    if (LOGGER.isErrorEnabled()) {
+                        LOGGER.error("closeChannel: close the channel exception", e);
+                    }
                 } finally {
                     this.lockChannelTables.unlock();
                 }
             } else {
-                LOGGER.warn("closeChannel: try to lock channel table, but timeout, {}ms", LOCK_TIMEOUT_MILLIS);
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("closeChannel: try to lock channel table, but timeout, {}ms", LOCK_TIMEOUT_MILLIS);
+                }
             }
         } catch (InterruptedException e) {
-            LOGGER.error("closeChannel exception", e);
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("closeChannel exception", e);
+            }
         }
     }
 
@@ -307,25 +328,35 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                     }
 
                     if (null == prevCW) {
-                        LOGGER.info("eventCloseChannel: the channel[{}] has been removed from the channel table before", addrRemote);
+                        if (LOGGER.isInfoEnabled()) {
+                            LOGGER.info("eventCloseChannel: the channel[{}] has been removed from the channel table before", addrRemote);
+                        }
                         removeItemFromTable = false;
                     }
 
                     if (removeItemFromTable) {
                         this.channelTables.remove(addrRemote);
-                        LOGGER.info("closeChannel: the channel[{}] was removed from channel table", addrRemote);
+                        if (LOGGER.isInfoEnabled()) {
+                            LOGGER.info("closeChannel: the channel[{}] was removed from channel table", addrRemote);
+                        }
                         RemotingUtil.closeChannel(channel);
                     }
                 } catch (Exception e) {
-                    LOGGER.error("closeChannel: close the channel exception", e);
+                    if (LOGGER.isErrorEnabled()) {
+                        LOGGER.error("closeChannel: close the channel exception", e);
+                    }
                 } finally {
                     this.lockChannelTables.unlock();
                 }
             } else {
-                LOGGER.warn("closeChannel: try to lock channel table, but timeout, {}ms", LOCK_TIMEOUT_MILLIS);
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("closeChannel: try to lock channel table, but timeout, {}ms", LOCK_TIMEOUT_MILLIS);
+                }
             }
         } catch (InterruptedException e) {
-            LOGGER.error("closeChannel exception", e);
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("closeChannel exception", e);
+            }
         }
     }
 
@@ -340,16 +371,19 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
             } else if (addrs.size() != old.size()) {
                 update = true;
             } else {
-                for (int i = 0; i < addrs.size() && !update; i++) {
-                    if (!old.contains(addrs.get(i))) {
+                for (String addr : addrs) {
+                    if (!old.contains(addr)) {
                         update = true;
+                        break;
                     }
                 }
             }
 
             if (update) {
                 Collections.shuffle(addrs);
-                LOGGER.info("name server address updated. NEW : {} , OLD: {}", addrs, old);
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("name server address updated. NEW : {} , OLD: {}", addrs, old);
+                }
                 this.namesrvAddrList.set(addrs);
             }
         }
@@ -375,15 +409,21 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 doAfterRpcHooks(RemotingHelper.parseChannelRemoteAddr(channel), request, response);
                 return response;
             } catch (RemotingSendRequestException e) {
-                LOGGER.warn("invokeSync: send request exception, so close the channel[{}]", addr);
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("invokeSync: send request exception, so close the channel[{}]", addr);
+                }
                 this.closeChannel(addr, channel);
                 throw e;
             } catch (RemotingTimeoutException e) {
                 if (nettyClientConfig.isClientCloseSocketIfTimeout()) {
                     this.closeChannel(addr, channel);
-                    LOGGER.warn("invokeSync: close socket because of timeout, {}ms, {}", timeoutMillis, addr);
+                    if (LOGGER.isWarnEnabled()) {
+                        LOGGER.warn("invokeSync: close socket because of timeout, {}ms, {}", timeoutMillis, addr);
+                    }
                 }
-                LOGGER.warn("invokeSync: wait response timeout exception, the channel[{}]", addr);
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("invokeSync: wait response timeout exception, the channel[{}]", addr);
+                }
                 throw e;
             }
         } else {
@@ -433,7 +473,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                         String newAddr = addrList.get(index);
 
                         this.namesrvAddrChoosed.set(newAddr);
-                        LOGGER.info("new name server is chosen. OLD: {} , NEW: {}. namesrvIndex = {}", addr, newAddr, namesrvIndex);
+                        if (LOGGER.isInfoEnabled()) {
+                            LOGGER.info("new name server is chosen. OLD: {} , NEW: {}. namesrvIndex = {}", addr, newAddr, namesrvIndex);
+                        }
                         Channel channelNew = this.createChannel(newAddr);
                         if (channelNew != null) {
                             return channelNew;
@@ -441,12 +483,16 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                     }
                 }
             } catch (Exception e) {
-                LOGGER.error("getAndCreateNameserverChannel: create name server channel exception", e);
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("getAndCreateNameserverChannel: create name server channel exception", e);
+                }
             } finally {
                 this.lockNamesrvChannel.unlock();
             }
         } else {
-            LOGGER.warn("getAndCreateNameserverChannel: try to lock name server, but timeout, {}ms", LOCK_TIMEOUT_MILLIS);
+            if (LOGGER.isWarnEnabled()) {
+                LOGGER.warn("getAndCreateNameserverChannel: try to lock name server, but timeout, {}ms", LOCK_TIMEOUT_MILLIS);
+            }
         }
 
         return null;
@@ -481,31 +527,43 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
 
                 if (createNewConnection) {
                     ChannelFuture channelFuture = this.bootstrap.connect(RemotingHelper.string2SocketAddress(addr));
-                    LOGGER.info("createChannel: begin to connect remote host[{}] asynchronously", addr);
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info("createChannel: begin to connect remote host[{}] asynchronously", addr);
+                    }
                     cw = new ChannelWrapper(channelFuture);
                     this.channelTables.put(addr, cw);
                 }
             } catch (Exception e) {
-                LOGGER.error("createChannel: create channel exception", e);
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("createChannel: create channel exception", e);
+                }
             } finally {
                 this.lockChannelTables.unlock();
             }
         } else {
-            LOGGER.warn("createChannel: try to lock channel table, but timeout, {}ms", LOCK_TIMEOUT_MILLIS);
+            if (LOGGER.isWarnEnabled()) {
+                LOGGER.warn("createChannel: try to lock channel table, but timeout, {}ms", LOCK_TIMEOUT_MILLIS);
+            }
         }
 
         if (cw != null) {
             ChannelFuture channelFuture = cw.getChannelFuture();
             if (channelFuture.awaitUninterruptibly(this.nettyClientConfig.getConnectTimeoutMillis())) {
                 if (cw.isOK()) {
-                    LOGGER.info("createChannel: connect remote host[{}] success, {}", addr, channelFuture.toString());
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info("createChannel: connect remote host[{}] success, {}", addr, channelFuture.toString());
+                    }
                     return cw.getChannel();
                 } else {
-                    LOGGER.warn("createChannel: connect remote host[" + addr + "] failed, " + channelFuture.toString(), channelFuture.cause());
+                    if (LOGGER.isWarnEnabled()) {
+                        LOGGER.warn("createChannel: connect remote host[" + addr + "] failed, " + channelFuture.toString(), channelFuture.cause());
+                    }
                 }
             } else {
-                LOGGER.warn("createChannel: connect remote host[{}] timeout {}ms, {}", addr, this.nettyClientConfig.getConnectTimeoutMillis(),
-                        channelFuture.toString());
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("createChannel: connect remote host[{}] timeout {}ms, {}", addr, this.nettyClientConfig.getConnectTimeoutMillis(),
+                            channelFuture.toString());
+                }
             }
         }
 
@@ -527,7 +585,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 }
                 this.invokeAsyncImpl(channel, request, timeoutMillis - costTime, invokeCallback);
             } catch (RemotingSendRequestException e) {
-                LOGGER.warn("invokeAsync: send request exception, so close the channel[{}]", addr);
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("invokeAsync: send request exception, so close the channel[{}]", addr);
+                }
                 this.closeChannel(addr, channel);
                 throw e;
             }
@@ -546,7 +606,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 doBeforeRpcHooks(addr, request);
                 this.invokeOnewayImpl(channel, request, timeoutMillis);
             } catch (RemotingSendRequestException e) {
-                LOGGER.warn("invokeOneway: send request exception, so close the channel[{}]", addr);
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("invokeOneway: send request exception, so close the channel[{}]", addr);
+                }
                 this.closeChannel(addr, channel);
                 throw e;
             }
@@ -635,7 +697,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                             ChannelPromise promise) throws Exception {
             final String local = localAddress == null ? "UNKNOWN" : RemotingHelper.parseSocketAddressAddr(localAddress);
             final String remote = remoteAddress == null ? "UNKNOWN" : RemotingHelper.parseSocketAddressAddr(remoteAddress);
-            LOGGER.info("NETTY CLIENT PIPELINE: CONNECT  {} => {}", local, remote);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("NETTY CLIENT PIPELINE: CONNECT  {} => {}", local, remote);
+            }
 
             super.connect(ctx, remoteAddress, localAddress, promise);
 
@@ -647,7 +711,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         @Override
         public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
             final String remoteAddress = RemotingHelper.parseChannelRemoteAddr(ctx.channel());
-            LOGGER.info("NETTY CLIENT PIPELINE: DISCONNECT {}", remoteAddress);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("NETTY CLIENT PIPELINE: DISCONNECT {}", remoteAddress);
+            }
             closeChannel(ctx.channel());
             super.disconnect(ctx, promise);
 
@@ -659,7 +725,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         @Override
         public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
             final String remoteAddress = RemotingHelper.parseChannelRemoteAddr(ctx.channel());
-            LOGGER.info("NETTY CLIENT PIPELINE: CLOSE {}", remoteAddress);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("NETTY CLIENT PIPELINE: CLOSE {}", remoteAddress);
+            }
             closeChannel(ctx.channel());
             super.close(ctx, promise);
             NettyRemotingClient.this.failFast(ctx.channel());
@@ -674,7 +742,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 IdleStateEvent event = (IdleStateEvent) evt;
                 if (event.state().equals(IdleState.ALL_IDLE)) {
                     final String remoteAddress = RemotingHelper.parseChannelRemoteAddr(ctx.channel());
-                    LOGGER.warn("NETTY CLIENT PIPELINE: IDLE exception [{}]", remoteAddress);
+                    if (LOGGER.isWarnEnabled()) {
+                        LOGGER.warn("NETTY CLIENT PIPELINE: IDLE exception [{}]", remoteAddress);
+                    }
                     closeChannel(ctx.channel());
                     if (NettyRemotingClient.this.channelEventListener != null) {
                         NettyRemotingClient.this
@@ -689,8 +759,10 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             final String remoteAddress = RemotingHelper.parseChannelRemoteAddr(ctx.channel());
-            LOGGER.warn("NETTY CLIENT PIPELINE: exceptionCaught {}", remoteAddress);
-            LOGGER.warn("NETTY CLIENT PIPELINE: exceptionCaught exception.", cause);
+            if (LOGGER.isWarnEnabled()) {
+                LOGGER.warn("NETTY CLIENT PIPELINE: exceptionCaught {}", remoteAddress);
+                LOGGER.warn("NETTY CLIENT PIPELINE: exceptionCaught exception.", cause);
+            }
             closeChannel(ctx.channel());
             if (NettyRemotingClient.this.channelEventListener != null) {
                 NettyRemotingClient.this.putNettyEvent(new NettyEvent(NettyEventType.EXCEPTION, remoteAddress, ctx.channel()));

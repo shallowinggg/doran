@@ -93,8 +93,11 @@ public class ClientApiImpl {
                 RemotingCommand response = this.client.invokeSync(serverAddr, request, timeoutMillis);
                 switch (response.getCode()) {
                     case ResponseCode.SUCCESS:
-                        LOGGER.info("Register client {} to server {} success", clientId, serverAddr);
                         RegisterClientResponseHeader responseHeader = response.decodeCommandCustomHeader(RegisterClientResponseHeader.class);
+                        if (LOGGER.isInfoEnabled()) {
+                            LOGGER.info("Register client {} to server {} success", clientId, serverAddr);
+                        }
+
                         int configNums = responseHeader.getHoldingMqConfigNums();
                         if (configNums != 0) {
                             List<MqConfig> configs = RemotingSerializable.decodeArray(response.getBody(), MqConfig.class);
@@ -106,9 +109,13 @@ public class ClientApiImpl {
                 }
             } catch (InterruptedException | RemotingConnectException |
                     RemotingSendRequestException | RemotingTimeoutException e) {
-                LOGGER.error("Register client {} to server {} fail", clientId, serverAddr, e);
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Register client {} to server {} fail", clientId, serverAddr, e);
+                }
             } catch (RemotingCommandException e) {
-                LOGGER.error("Parse RegisterClientResponseHeader's body fail", e);
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Decode RegisterClientResponseHeader fail", e);
+                }
             }
         });
     }
@@ -118,8 +125,7 @@ public class ClientApiImpl {
 
     }
 
-    public MqConfig requestConfig(String configName, int timeoutMillis)
-            throws NetworkException {
+    public MqConfig requestConfig(String configName, int timeoutMillis) {
         final RequestMqConfigRequestHeader header = new RequestMqConfigRequestHeader();
         header.setConfigName(configName);
 
@@ -130,6 +136,10 @@ public class ClientApiImpl {
             switch (response.getCode()) {
                 case ResponseCode.SUCCESS:
                     SendMqConfigResponseHeader responseHeader = response.decodeCommandCustomHeader(SendMqConfigResponseHeader.class);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Request MQ Config {} success", configName);
+                    }
+
                     return MqConfig.obtainFromMqConfigHeader(responseHeader);
                 case ResponseCode.CONFIG_NOT_EXIST:
                     throw new ConfigNotExistException(configName);
@@ -138,10 +148,14 @@ public class ClientApiImpl {
             }
         } catch (InterruptedException | RemotingConnectException |
                 RemotingSendRequestException | RemotingTimeoutException e) {
-            LOGGER.error("request config {} fail", configName, e);
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Request config {} fail", configName, e);
+            }
             throw new NetworkException();
         } catch (RemotingCommandException e) {
-            LOGGER.error("request config {} fail", configName, e);
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Request config {} fail", configName, e);
+            }
             throw new SystemException(e);
         }
     }

@@ -1,5 +1,7 @@
 package com.shallowinggg.doran.common;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -21,7 +23,7 @@ public class ThreadFactoryImpl implements ThreadFactory {
     }
 
     @Override
-    public Thread newThread(Runnable r) {
+    public Thread newThread(@NotNull Runnable r) {
         Thread t = new Thread(r, prefix + index.getAndIncrement());
         t.setDaemon(daemon);
         return t;

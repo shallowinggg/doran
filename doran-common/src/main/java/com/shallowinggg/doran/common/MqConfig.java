@@ -4,7 +4,7 @@ package com.shallowinggg.doran.common;
  * This class is provided to store basic MQ configurations.
  * It is retrieved by communicated with server, and sync
  * with server data.
- *
+ * <p>
  * Client producer and consumer should hold this config
  * and its timestamp. When this config is updated, client
  * can invoke {@link #isChanged(long)} method with time

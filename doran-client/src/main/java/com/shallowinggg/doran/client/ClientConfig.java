@@ -68,7 +68,7 @@ public class ClientConfig {
         int pid = SystemUtils.getPid();
         StringBuilder clientId = new StringBuilder(15 + 1 + 5);
         for (int i = 0, len = ip.length; i < len; ++i) {
-            clientId.append(ip[i]);
+            clientId.append(ip[i] & 0xFF);
             if (i != len - 1) {
                 clientId.append(".");
             }

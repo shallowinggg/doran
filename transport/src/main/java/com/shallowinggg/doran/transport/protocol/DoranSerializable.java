@@ -87,10 +87,10 @@ public class DoranSerializable {
             Map.Entry<String, String> entry = it.next();
             if (entry.getKey() != null && entry.getValue() != null) {
                 kvLength =
-                    // keySize + Key
-                    2 + entry.getKey().getBytes(CHARSET_UTF8).length
-                        // valSize + val
-                        + 4 + entry.getValue().getBytes(CHARSET_UTF8).length;
+                        // keySize + Key
+                        2 + entry.getKey().getBytes(CHARSET_UTF8).length
+                                // valSize + val
+                                + 4 + entry.getValue().getBytes(CHARSET_UTF8).length;
                 totalLength += kvLength;
             }
         }
@@ -119,18 +119,18 @@ public class DoranSerializable {
     private static int calTotalLen(int remark, int ext) {
         // int code(~32767)
         return 2
-            // LanguageCode language
-            + 1
-            // int version(~32767)
-            + 2
-            // int opaque
-            + 4
-            // int flag
-            + 4
-            // String remark
-            + 4 + remark
-            // HashMap<String, String> extFields
-            + 4 + ext;
+                // LanguageCode language
+                + 1
+                // int version(~32767)
+                + 2
+                // int opaque
+                + 4
+                // int flag
+                + 4
+                // String remark
+                + 4 + remark
+                // HashMap<String, String> extFields
+                + 4 + ext;
     }
 
     public static RemotingCommand doranProtocolDecode(final byte[] headerArray) {

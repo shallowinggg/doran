@@ -31,15 +31,7 @@ import com.shallowinggg.doran.transport.protocol.RemotingCommand;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
@@ -50,6 +42,7 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,13 +50,11 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.cert.CertificateException;
 import java.util.NoSuchElementException;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class NettyRemotingServer extends NettyRemotingAbstract implements RemotingServer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RemotingHelper.ROCKETMQ_REMOTING);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemotingHelper.DORAN_REMOTING);
     private final ServerBootstrap serverBootstrap;
     private final EventLoopGroup eventLoopGroupSelector;
     private final EventLoopGroup eventLoopGroupBoss;
@@ -114,7 +105,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
             private final AtomicInteger threadIndex = new AtomicInteger(0);
 
             @Override
-            public Thread newThread(Runnable r) {
+            public Thread newThread(@NotNull Runnable r) {
                 return new Thread(r, "NettyServerPublicExecutor_" + this.threadIndex.incrementAndGet());
             }
         });
@@ -126,7 +117,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 private final AtomicInteger threadIndex = new AtomicInteger(0);
 
                 @Override
-                public Thread newThread(Runnable r) {
+                public Thread newThread(@NotNull Runnable r) {
                     return new Thread(r, String.format("NettyEPOLLBoss_%d", this.threadIndex.incrementAndGet()));
                 }
             });
@@ -137,7 +128,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 private final int threadTotal = nettyServerConfig.getServerSelectorThreads();
 
                 @Override
-                public Thread newThread(Runnable r) {
+                public Thread newThread(@NotNull Runnable r) {
                     return new Thread(r, String.format("NettyServerEPOLLSelector_%d_%d", threadTotal, this.threadIndex.incrementAndGet()));
                 }
             });
@@ -146,7 +137,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 private final AtomicInteger threadIndex = new AtomicInteger(0);
 
                 @Override
-                public Thread newThread(Runnable r) {
+                public Thread newThread(@NotNull Runnable r) {
                     return new Thread(r, String.format("NettyNIOBoss_%d", this.threadIndex.incrementAndGet()));
                 }
             });
@@ -156,7 +147,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 private final int threadTotal = nettyServerConfig.getServerSelectorThreads();
 
                 @Override
-                public Thread newThread(Runnable r) {
+                public Thread newThread(@NotNull Runnable r) {
                     return new Thread(r, String.format("NettyServerNIOSelector_%d_%d", threadTotal, this.threadIndex.incrementAndGet()));
                 }
             });
@@ -196,7 +187,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                     private final AtomicInteger threadIndex = new AtomicInteger(0);
 
                     @Override
-                    public Thread newThread(Runnable r) {
+                    public Thread newThread(@NotNull Runnable r) {
                         return new Thread(r, "NettyServerCodecThread_" + this.threadIndex.incrementAndGet());
                     }
                 });
@@ -249,12 +240,12 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
 
         // 定期扫描回复表，执行回调方法
         this.timer.scheduleAtFixedRate(() -> {
-                try {
-                    NettyRemotingServer.this.scanResponseTable();
-                } catch (Throwable e) {
-                    LOGGER.error("scanResponseTable exception", e);
-                }
-            }, 1000 * 3, 1000, TimeUnit.MILLISECONDS);
+            try {
+                NettyRemotingServer.this.scanResponseTable();
+            } catch (Throwable e) {
+                LOGGER.error("scanResponseTable exception", e);
+            }
+        }, 1000 * 3, 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override

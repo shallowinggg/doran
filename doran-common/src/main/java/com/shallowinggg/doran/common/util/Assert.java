@@ -21,7 +21,7 @@ public class Assert {
     }
 
     public static void equals(int expected, int actual) {
-        if(expected != actual) {
+        if (expected != actual) {
             throw new AssertionError("expected: " + expected + ", actual: " + actual);
         }
     }
@@ -37,17 +37,17 @@ public class Assert {
     }
 
     public static void equals(String expected, String actual) {
-        if(expected == null && actual == null) {
+        if (expected == null && actual == null) {
             return;
         }
 
-        if(expected != null && !expected.equals(actual) || !actual.equals(expected)) {
+        if (expected != null && !expected.equals(actual) || !actual.equals(expected)) {
             throw new AssertionError("expected: " + expected + ", actual: " + actual);
         }
     }
 
     public static void hasText(CharSequence c) {
-        if(!StringUtils.hasText(c)) {
+        if (!StringUtils.hasText(c)) {
             throw new IllegalArgumentException("[Assertion failed] - this String argument must have text; it must not be null, empty, or blank");
         }
     }

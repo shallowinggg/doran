@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * Miscellaneous {@code java.lang.Class} utility methods.
  * Mainly for internal use within the framework.
- *
+ * <p>
  * Spring's utility class.
  *
  * @author Juergen Hoeller
@@ -42,14 +42,15 @@ public abstract class ClassUtils {
      * (for regular Java classes, expecting a standard no-arg setup).
      * <p>Note that this method tries to set the constructor accessible
      * if given a non-accessible (that is, non-public) constructor.
+     *
      * @param clazz the class to instantiate
      * @return the new instance
      * @throws ClassInstantiationException if the bean cannot be instantiated.
-     * The cause may notably indicate a {@link NoSuchMethodException} if no
-     * primary/default constructor was found, a {@link NoClassDefFoundError}
-     * or other {@link LinkageError} in case of an unresolvable class definition
-     * (e.g. due to a missing dependency at runtime), or an exception thrown
-     * from the constructor invocation itself.
+     *                                     The cause may notably indicate a {@link NoSuchMethodException} if no
+     *                                     primary/default constructor was found, a {@link NoClassDefFoundError}
+     *                                     or other {@link LinkageError} in case of an unresolvable class definition
+     *                                     (e.g. due to a missing dependency at runtime), or an exception thrown
+     *                                     from the constructor invocation itself.
      * @see Constructor#newInstance
      */
     public static <T> T instantiateClass(Class<T> clazz) throws ClassInstantiationException {
@@ -111,6 +112,7 @@ public abstract class ClassUtils {
      * if necessary. The {@code setAccessible(true)} method is only called
      * when actually necessary, to avoid unnecessary conflicts with a JVM
      * SecurityManager (if active).
+     *
      * @param ctor the constructor to make accessible
      * @see java.lang.reflect.Constructor#setAccessible
      */

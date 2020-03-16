@@ -23,7 +23,7 @@ public class ServerCoreProcessor implements NettyRequestProcessor {
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         switch (request.getCode()) {
             case RequestCode.REGISTER_CLIENT:
-                return registerClient(request);
+                return registerClient(ctx, request);
             case RequestCode.HEART_BEAT:
                 break;
             case RequestCode.REQUEST_CONFIG:
@@ -50,7 +50,9 @@ public class ServerCoreProcessor implements NettyRequestProcessor {
      * @return handle result
      * @throws RemotingCommandException if read request's header fail
      */
-    public RemotingCommand registerClient(final RemotingCommand request) throws RemotingCommandException {
+    public RemotingCommand registerClient(final ChannelHandlerContext context,
+                                          final RemotingCommand request)
+            throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(RegisterClientResponseHeader.class);
         final RegisterClientResponseHeader responseHeader = (RegisterClientResponseHeader) response.readCustomHeader();
         final RegisterClientRequestHeader requestHeader = request.decodeCommandCustomHeader(RegisterClientRequestHeader.class);
@@ -61,7 +63,7 @@ public class ServerCoreProcessor implements NettyRequestProcessor {
 
         if (!manager.hasClient(clientId)) {
             ClientMetaInfo clientMetaInfo = new ClientMetaInfo(clientId, clientName);
-            manager.registerClient(clientMetaInfo);
+            manager.registerClient(clientMetaInfo, context.channel());
             responseHeader.setHoldingMqConfigNums(0);
         } else {
             ClientMetaInfo clientMetaInfo = manager.getClientMetaInfo(clientId);

@@ -1,6 +1,7 @@
 package com.shallowinggg.doran.common.exception;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
@@ -63,7 +64,6 @@ public class ClassInstantiationException extends RuntimeException {
      *                           (typically, but not necessarily, a static factory method)
      * @param msg                the detail message
      * @param cause              the root cause
-     * @since 4.3
      */
     public ClassInstantiationException(Method constructingMethod, String msg, @Nullable Throwable cause) {
         super("Failed to instantiate [" + constructingMethod.getReturnType().getName() + "]: " + msg, cause);

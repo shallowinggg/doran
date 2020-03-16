@@ -17,7 +17,6 @@
 package com.shallowinggg.doran.transport.common;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +35,7 @@ public class RemotingUtil {
     private static final String LINUX_OS = "linux";
     private static final String WINDOWS_OS = "windows";
 
-    private static final Logger log = LoggerFactory.getLogger(RemotingHelper.ROCKETMQ_REMOTING);
+    private static final Logger log = LoggerFactory.getLogger(RemotingHelper.DORAN_REMOTING);
     private static boolean isLinuxPlatform = false;
     private static boolean isWindowsPlatform = false;
 

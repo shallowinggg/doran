@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
  * Base class for background thread
  */
 public abstract class ServiceThread implements Runnable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RemotingHelper.ROCKETMQ_REMOTING);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemotingHelper.DORAN_REMOTING);
 
     private static final long JOIN_TIME = 90 * 1000;
     protected final Thread thread;
@@ -36,6 +36,7 @@ public abstract class ServiceThread implements Runnable {
 
     /**
      * Service name, used for thread name.
+     *
      * @return service name
      */
     public abstract String getServiceName();
@@ -50,7 +51,9 @@ public abstract class ServiceThread implements Runnable {
 
     public void shutdown(final boolean interrupt) {
         this.stopped = true;
-        LOGGER.info("shutdown thread " + this.getServiceName() + " interrupt " + interrupt);
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("shutdown thread " + this.getServiceName() + " interrupt " + interrupt);
+        }
         synchronized (this) {
             if (!this.hasNotified) {
                 this.hasNotified = true;
@@ -66,10 +69,14 @@ public abstract class ServiceThread implements Runnable {
             long beginTime = System.currentTimeMillis();
             this.thread.join(this.getJoinTime());
             long elapsedTime = System.currentTimeMillis() - beginTime;
-            LOGGER.info("join thread " + this.getServiceName() + " elapsed time(ms) " + elapsedTime + " "
-                + this.getJoinTime());
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("join thread " + this.getServiceName() + " elapsed time(ms) " + elapsedTime + " "
+                        + this.getJoinTime());
+            }
         } catch (InterruptedException e) {
-            LOGGER.error("Interrupted", e);
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Interrupted", e);
+            }
         }
     }
 

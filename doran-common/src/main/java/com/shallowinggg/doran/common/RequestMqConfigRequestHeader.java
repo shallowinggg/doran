@@ -14,7 +14,7 @@ public class RequestMqConfigRequestHeader implements CommandCustomHeader {
 
     @Override
     public void checkFields() throws RemotingCommandException {
-        if(!StringUtils.hasText(configName)) {
+        if (!StringUtils.hasText(configName)) {
             throw new RemotingCommandException("configName must has text");
         }
     }

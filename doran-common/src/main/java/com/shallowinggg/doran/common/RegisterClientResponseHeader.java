@@ -14,7 +14,7 @@ public class RegisterClientResponseHeader implements CommandCustomHeader {
 
     @Override
     public void checkFields() throws RemotingCommandException {
-        if(holdingMqConfigNums <0) {
+        if (holdingMqConfigNums < 0) {
             throw new RemotingCommandException("'holdingMqConfigNums' must not be negative");
         }
     }
