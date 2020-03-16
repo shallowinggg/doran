@@ -13,8 +13,8 @@ import java.util.Enumeration;
 /**
  * @author shallowinggg
  */
-public class SystemUtils {
-    static final int IPV4_LENGTH = 4;
+public abstract class SystemUtils {
+    private static final int IPV4_LENGTH = 4;
 
     public static int getPid() {
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();

@@ -6,6 +6,7 @@ import com.shallowinggg.doran.common.MqConfig;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.transport.netty.NettyClientConfig;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,12 +37,14 @@ public class ClientController {
     }
 
     public void init() {
+        this.clientApiImpl.init();
         this.clientApiImpl.updateServerAddress(clientConfig.getServerAddr());
         this.heartBeatExecutor = new ScheduledThreadPoolExecutor(1,
                 new ThreadFactoryImpl("heartBeat_", true));
     }
 
     public void start() {
+        this.clientApiImpl.start();
         this.registerClient();
         this.heartBeatExecutor.scheduleAtFixedRate(() -> {
             try {
@@ -72,11 +75,17 @@ public class ClientController {
         return this.configManager.getConfig(configName, clientConfig.getTimeoutMillis());
     }
 
+    public void shutdown() {
+        this.clientApiImpl.shutdown();
+        this.heartBeatExecutor.shutdown();
+    }
 
+    @NotNull
     public ClientApiImpl getClientApiImpl() {
         return clientApiImpl;
     }
 
+    @NotNull
     public ConfigManager getConfigManager() {
         return configManager;
     }

@@ -2,6 +2,7 @@ package com.shallowinggg.doran.client;
 
 import com.shallowinggg.doran.common.MqConfig;
 import com.shallowinggg.doran.common.exception.ConfigNotExistException;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,7 @@ public class ConfigManager {
         this.configMap = new ConcurrentHashMap<>(16);
     }
 
+    @NotNull
     public MqConfig getConfig(String configName, int timeoutMillis) {
         if (configMap.containsKey(configName)) {
             MqConfig config = configMap.get(configName);
@@ -50,9 +52,7 @@ public class ConfigManager {
             MqConfig config;
             try {
                 config = controller.getClientApiImpl().requestConfig(configName, timeoutMillis);
-                if (config != null) {
-                    configMap.put(configName, config);
-                }
+                configMap.put(configName, config);
             } catch (ConfigNotExistException e) {
                 configMap.put(configName, NON_EXIST_CONFIG);
                 throw e;

@@ -1,13 +1,11 @@
 package com.shallowinggg.doran.common.util;
 
-import com.sun.istack.internal.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author shallowinggg
  */
-public class StringUtils {
-    private StringUtils() {
-    }
+public abstract class StringUtils {
 
     /**
      * Check that the given {@code CharSequence} is neither {@code null} nor

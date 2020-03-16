@@ -1,10 +1,13 @@
 package com.shallowinggg.doran.client;
 
+import com.shallowinggg.doran.client.resolver.DefaultInetAddressChecker;
+import com.shallowinggg.doran.client.resolver.InetAddressChecker;
 import com.shallowinggg.doran.common.*;
 import com.shallowinggg.doran.common.exception.ConfigNotExistException;
 import com.shallowinggg.doran.common.exception.NetworkException;
 import com.shallowinggg.doran.common.exception.SystemException;
 import com.shallowinggg.doran.common.exception.UnexpectedResponseException;
+import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.transport.RemotingClient;
 import com.shallowinggg.doran.transport.exception.RemotingCommandException;
 import com.shallowinggg.doran.transport.exception.RemotingConnectException;
@@ -14,6 +17,7 @@ import com.shallowinggg.doran.transport.netty.NettyClientConfig;
 import com.shallowinggg.doran.transport.netty.NettyRemotingClient;
 import com.shallowinggg.doran.transport.protocol.RemotingCommand;
 import com.shallowinggg.doran.transport.protocol.RemotingSerializable;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +35,7 @@ public class ClientApiImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientApiImpl.class);
     private final ClientController controller;
     private final RemotingClient client;
+    private final InetAddressChecker nameResolver;
     private ExecutorService clientOuterExecutor;
     private String serverAddr;
 
@@ -38,6 +43,7 @@ public class ClientApiImpl {
                          final NettyClientConfig nettyClientConfig) {
         this.controller = controller;
         this.client = new NettyRemotingClient(nettyClientConfig);
+        this.nameResolver = new DefaultInetAddressChecker();
     }
 
     public void init() {
@@ -60,7 +66,9 @@ public class ClientApiImpl {
         this.client.registerProcessor(RequestCode.UPDATE_MQ_CONFIG, processor, null);
     }
 
-    public void updateServerAddress(String serverAddress) {
+    public void updateServerAddress(@NotNull String serverAddress) {
+        Assert.hasText(serverAddress);
+        this.nameResolver.check(serverAddress);
         this.serverAddr = serverAddress;
         this.client.updateNameServerAddressList(Collections.singletonList(serverAddress));
     }
@@ -90,7 +98,7 @@ public class ClientApiImpl {
         clientOuterExecutor.execute(() -> {
             RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.REGISTER_CLIENT, header);
             try {
-                RemotingCommand response = this.client.invokeSync(serverAddr, request, timeoutMillis);
+                RemotingCommand response = this.client.invokeSync(null, request, timeoutMillis);
                 switch (response.getCode()) {
                     case ResponseCode.SUCCESS:
                         RegisterClientResponseHeader responseHeader = response.decodeCommandCustomHeader(RegisterClientResponseHeader.class);
@@ -125,13 +133,14 @@ public class ClientApiImpl {
 
     }
 
+    @NotNull
     public MqConfig requestConfig(String configName, int timeoutMillis) {
         final RequestMqConfigRequestHeader header = new RequestMqConfigRequestHeader();
         header.setConfigName(configName);
 
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.REQUEST_CONFIG, header);
         try {
-            RemotingCommand response = this.client.invokeSync(serverAddr, request, timeoutMillis);
+            RemotingCommand response = this.client.invokeSync(null, request, timeoutMillis);
 
             switch (response.getCode()) {
                 case ResponseCode.SUCCESS:

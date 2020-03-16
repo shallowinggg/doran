@@ -3,10 +3,7 @@ package com.shallowinggg.doran.common.util;
 /**
  * @author shallowinggg
  */
-public class Assert {
-
-    private Assert() {
-    }
+public abstract class Assert {
 
     public static void notNull(Object o, String msg) {
         if (o == null) {
