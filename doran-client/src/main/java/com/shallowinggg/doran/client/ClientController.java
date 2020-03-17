@@ -2,6 +2,7 @@ package com.shallowinggg.doran.client;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
+import com.shallowinggg.doran.client.producer.DefaultProducer;
 import com.shallowinggg.doran.common.MqConfig;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
 import com.shallowinggg.doran.common.util.Assert;
@@ -78,6 +79,17 @@ public class ClientController {
     public void shutdown() {
         this.clientApiImpl.shutdown();
         this.heartBeatExecutor.shutdown();
+    }
+
+    public DefaultProducer createProducer(String configName) {
+        return createProducer(configName, true);
+    }
+
+    public DefaultProducer createProducer(String configName, boolean async) {
+        Assert.hasText(configName);
+        final MqConfig config = getMqConfig(configName);
+        final Counter messageCounter = producerMetricRegistry.counter(configName);
+        return new DefaultProducer(configName, messageCounter, config);
     }
 
     @NotNull
