@@ -7,6 +7,8 @@ import com.shallowinggg.doran.common.MqConfig;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.transport.netty.NettyClientConfig;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import io.netty.util.concurrent.EventExecutorGroup;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +30,7 @@ public class ClientController {
     private final MetricRegistry consumerMetricRegistry;
     private ScheduledExecutorService heartBeatExecutor;
     private final ClientConfig clientConfig;
+    private EventExecutorGroup asyncExecutor;
 
     public ClientController(final NettyClientConfig config, final ClientConfig clientConfig) {
         this.configManager = new ConfigManager(this);
@@ -42,6 +45,8 @@ public class ClientController {
         this.clientApiImpl.updateServerAddress(clientConfig.getServerAddr());
         this.heartBeatExecutor = new ScheduledThreadPoolExecutor(1,
                 new ThreadFactoryImpl("heartBeat_", true));
+        this.asyncExecutor = new DefaultEventExecutorGroup(Runtime.getRuntime().availableProcessors(),
+                new ThreadFactoryImpl("clientAsync_"));
     }
 
     public void start() {
@@ -79,6 +84,7 @@ public class ClientController {
     public void shutdown() {
         this.clientApiImpl.shutdown();
         this.heartBeatExecutor.shutdown();
+        this.asyncExecutor.shutdownGracefully();
     }
 
     public DefaultProducer createProducer(String configName) {
@@ -87,9 +93,22 @@ public class ClientController {
 
     public DefaultProducer createProducer(String configName, boolean async) {
         Assert.hasText(configName);
-        final MqConfig config = getMqConfig(configName);
-        final Counter messageCounter = producerMetricRegistry.counter(configName);
-        return new DefaultProducer(configName, messageCounter, config);
+        synchronized (configName.intern()) {
+            final Counter messageCounter = producerMetricRegistry.counter(configName);
+            final DefaultProducer producer = new DefaultProducer(messageCounter);
+            if (async) {
+                asyncExecutor.submit(() -> getMqConfig(configName))
+                        .addListener(f -> {
+                            final MqConfig config = (MqConfig) f.get();
+                            producer.setMqConfig(config);
+                        });
+            } else {
+                final MqConfig config = getMqConfig(configName);
+                producer.setMqConfig(config);
+            }
+
+            return producer;
+        }
     }
 
     @NotNull

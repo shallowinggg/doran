@@ -27,6 +27,8 @@ public class ConfigManager {
     private final Map<String, MqConfig> configMap;
 
 
+
+
     public ConfigManager(final ClientController controller) {
         this.controller = controller;
         this.configMap = new ConcurrentHashMap<>(16);
