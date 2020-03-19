@@ -74,7 +74,7 @@ public class DoranSerializable {
         return headerBuffer.array();
     }
 
-    public static byte[] mapSerialize(HashMap<String, String> map) {
+    public static byte[] mapSerialize(Map<String, String> map) {
         // keySize+key+valSize+val
         if (null == map || map.isEmpty()) {
             return null;
