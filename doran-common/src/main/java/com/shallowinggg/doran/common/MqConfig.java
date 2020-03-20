@@ -23,9 +23,8 @@ public class MqConfig implements Cloneable {
 
     /**
      * MQ server urls, you can specify one or more urls and
-     * separated by {@link #DELIMITER}. It must include server
-     * host and port.
-     * e.g. "127.0.0.1:8161, 127.0.0.1:8162".
+     * separated by {@link #DELIMITER}.
+     * e.g. "amqp://userName :password@ipAddress:portNumber/virtualHos".
      * <p>
      * If you use ActiveMQ, you can specify broker urls like
      * "failover:url1, url2" directly, and thus use its special
@@ -167,6 +166,18 @@ public class MqConfig implements Cloneable {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public boolean equalsIgnoreThreadNum(MqConfig other) {
+        if (other == null) {
+            return false;
+        }
+        return name.equals(other.name) &&
+                urls.equals(other.urls) &&
+                username.equals(other.username) &&
+                password.equals(other.password) &&
+                domain.equals(other.domain) &&
+                domainName.equals(other.domainName);
     }
 
     @Override

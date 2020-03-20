@@ -95,7 +95,7 @@ public class ClientController {
         Assert.hasText(configName);
         synchronized (configName.intern()) {
             final Counter messageCounter = producerMetricRegistry.counter(configName);
-            final DefaultProducer producer = new DefaultProducer(messageCounter);
+            final DefaultProducer producer = new DefaultProducer(configName, messageCounter);
             if (async) {
                 asyncExecutor.submit(() -> getMqConfig(configName))
                         .addListener(f -> {
