@@ -1,6 +1,6 @@
 package com.shallowinggg.doran.server;
 
-import com.shallowinggg.doran.common.MqConfig;
+import com.shallowinggg.doran.common.MQConfig;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -13,7 +13,7 @@ import java.util.Map;
 public class ClientMetaInfo {
     private final String clientId;
     private final String clientName;
-    private final Map<String, MqConfig> holdingMqConfigs;
+    private final Map<String, MQConfig> holdingMqConfigs;
 
     public ClientMetaInfo(String clientId, String clientName) {
         this.clientId = clientId;
@@ -21,7 +21,7 @@ public class ClientMetaInfo {
         this.holdingMqConfigs = new HashMap<>(16);
     }
 
-    public void addMqConfig(MqConfig config) {
+    public void addMqConfig(MQConfig config) {
         this.holdingMqConfigs.putIfAbsent(config.getName(), config);
     }
 
@@ -29,8 +29,8 @@ public class ClientMetaInfo {
         return this.holdingMqConfigs.containsKey(configName);
     }
 
-    public Collection<MqConfig> holdingConfigs() {
-        Collection<MqConfig> mqConfigs = this.holdingMqConfigs.values();
+    public Collection<MQConfig> holdingConfigs() {
+        Collection<MQConfig> mqConfigs = this.holdingMqConfigs.values();
         return Collections.unmodifiableCollection(mqConfigs);
     }
 

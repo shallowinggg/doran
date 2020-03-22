@@ -1,7 +1,7 @@
 package com.shallowinggg.doran.client.producer;
 
 import com.shallowinggg.doran.client.IllegalConnectionUriException;
-import com.shallowinggg.doran.common.MqConfig;
+import com.shallowinggg.doran.common.MQConfig;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
 import java.io.IOException;
@@ -27,22 +27,22 @@ public class ConnectionFactoryCache {
         return INSTANCE;
     }
 
-    public com.rabbitmq.client.Connection getRabbitMQConnection(MqConfig config) {
+    public com.rabbitmq.client.Connection getRabbitMQConnection(MQConfig config) {
         MQConfigInner inner = new MQConfigInner(config);
         if (rabbitMQCache.containsKey(inner)) {
             return rabbitMQCache.get(inner);
         }
 
-        String urls = null;
+        String uri = null;
         lock.lock();
         try {
-            urls = config.getUrls();
+            uri = config.getUri();
             com.rabbitmq.client.ConnectionFactory connectionFactory = new com.rabbitmq.client.ConnectionFactory();
-            connectionFactory.setUri(config.getUrls());
+            connectionFactory.setUri(config.getUri());
             com.rabbitmq.client.Connection connection = connectionFactory.newConnection();
             rabbitMQCache.put(inner, connection);
         } catch (NoSuchAlgorithmException | KeyManagementException | URISyntaxException e) {
-            throw new IllegalConnectionUriException(urls, e);
+            throw new IllegalConnectionUriException(uri, e);
         } catch (IOException | TimeoutException e) {
             throw new RuntimeException(e);
         } finally {
@@ -51,23 +51,23 @@ public class ConnectionFactoryCache {
         return rabbitMQCache.get(inner);
     }
 
-    public javax.jms.Connection getActiveMQConnection(MqConfig config) {
+    public javax.jms.Connection getActiveMQConnection(MQConfig config) {
         MQConfigInner inner = new MQConfigInner(config);
         if (activeMQCache.containsKey(inner)) {
             return activeMQCache.get(inner);
         }
 
-        String urls = null;
+        String uri = null;
         lock.lock();
         try {
-            urls = config.getUrls();
+            uri = config.getUri();
             String username = config.getUsername();
             String password = config.getPassword();
-            javax.jms.ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(urls);
+            javax.jms.ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(uri);
             javax.jms.Connection connection = connectionFactory.createConnection(username, password);
             activeMQCache.put(inner, connection);
         } catch (IllegalArgumentException e) {
-            throw new IllegalConnectionUriException(urls, e.getCause());
+            throw new IllegalConnectionUriException(uri, e.getCause());
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
@@ -82,9 +82,9 @@ public class ConnectionFactoryCache {
         private final String username;
         private final String password;
 
-        MQConfigInner(MqConfig config) {
+        MQConfigInner(MQConfig config) {
             this.name = config.getName();
-            this.uri = config.getUrls();
+            this.uri = config.getUri();
             this.username = config.getUsername();
             this.password = config.getPassword();
         }

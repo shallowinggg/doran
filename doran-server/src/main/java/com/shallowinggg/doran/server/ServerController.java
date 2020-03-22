@@ -38,7 +38,7 @@ public class ServerController {
     /**
      * Manage all mq configs
      */
-    private final MqConfigManager mqConfigManager;
+    private final MQConfigManager mqConfigManager;
 
     private final ScheduledExecutorService scheduledExecutorService;
 
@@ -49,7 +49,7 @@ public class ServerController {
         this.server = new NettyRemotingServer(nettyServerConfig);
         this.serverOuterApi = new ServerOuterApi(this, nettyClientConfig);
         this.clientManager = new ClientManager(this);
-        this.mqConfigManager = new MqConfigManager(this);
+        this.mqConfigManager = new MQConfigManager(this);
         this.scheduledExecutorService = new ScheduledThreadPoolExecutor(1,
                 new ThreadFactoryImpl("serverScheduledThread_"));
     }
@@ -67,17 +67,15 @@ public class ServerController {
 
     public void start() {
         this.server.start();
-
         this.scheduledExecutorService.scheduleAtFixedRate(this.clientManager::scanInactiveClient,
                 5, 15, TimeUnit.SECONDS);
-
     }
 
     public ClientManager getClientManager() {
         return clientManager;
     }
 
-    public MqConfigManager getMqConfigManager() {
+    public MQConfigManager getMqConfigManager() {
         return mqConfigManager;
     }
 }

@@ -7,12 +7,16 @@ import com.shallowinggg.doran.transport.exception.RemotingCommandException;
 /**
  * @author shallowinggg
  */
-public class MqConfigHeader implements CommandCustomHeader {
+public class RequestMQConfigResponseHeader implements CommandCustomHeader {
+
     @CFNotNull
     private String name;
 
     @CFNotNull
-    private String urls;
+    private String type;
+
+    @CFNotNull
+    private String uri;
 
     @CFNotNull
     private String username;
@@ -21,16 +25,13 @@ public class MqConfigHeader implements CommandCustomHeader {
     private String password;
 
     @CFNotNull
-    private String domain;
+    private int threadNum;
 
     @CFNotNull
-    private String domainName;
+    private long timestamp;
 
     @CFNotNull
-    private Integer threadNum;
-
-    @CFNotNull
-    private Long timestamp;
+    private String extFieldsJson;
 
     @Override
     public void checkFields() throws RemotingCommandException {
@@ -44,12 +45,20 @@ public class MqConfigHeader implements CommandCustomHeader {
         this.name = name;
     }
 
-    public String getUrls() {
-        return urls;
+    public String getType() {
+        return type;
     }
 
-    public void setUrls(String urls) {
-        this.urls = urls;
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getUri() {
+        return uri;
+    }
+
+    public void setUri(String uri) {
+        this.uri = uri;
     }
 
     public String getUsername() {
@@ -68,35 +77,27 @@ public class MqConfigHeader implements CommandCustomHeader {
         this.password = password;
     }
 
-    public String getDomain() {
-        return domain;
-    }
-
-    public void setDomain(String domain) {
-        this.domain = domain;
-    }
-
-    public String getDomainName() {
-        return domainName;
-    }
-
-    public void setDomainName(String domainName) {
-        this.domainName = domainName;
-    }
-
-    public Integer getThreadNum() {
+    public int getThreadNum() {
         return threadNum;
     }
 
-    public void setThreadNum(Integer threadNum) {
+    public void setThreadNum(int threadNum) {
         this.threadNum = threadNum;
     }
 
-    public Long getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Long timestamp) {
+    public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getExtFieldsJson() {
+        return extFieldsJson;
+    }
+
+    public void setExtFieldsJson(String extFieldsJson) {
+        this.extFieldsJson = extFieldsJson;
     }
 }

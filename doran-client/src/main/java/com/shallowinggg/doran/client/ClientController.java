@@ -3,7 +3,7 @@ package com.shallowinggg.doran.client;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 import com.shallowinggg.doran.client.producer.DefaultProducer;
-import com.shallowinggg.doran.common.MqConfig;
+import com.shallowinggg.doran.common.MQConfig;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.transport.netty.NettyClientConfig;
@@ -76,7 +76,7 @@ public class ClientController {
 
     }
 
-    public MqConfig getMqConfig(String configName) {
+    public MQConfig getMqConfig(String configName) {
         Assert.hasText(configName);
         return this.configManager.getConfig(configName, clientConfig.getTimeoutMillis());
     }
@@ -99,11 +99,11 @@ public class ClientController {
             if (async) {
                 asyncExecutor.submit(() -> getMqConfig(configName))
                         .addListener(f -> {
-                            final MqConfig config = (MqConfig) f.get();
+                            final MQConfig config = (MQConfig) f.get();
                             producer.setMqConfig(config);
                         });
             } else {
-                final MqConfig config = getMqConfig(configName);
+                final MQConfig config = getMqConfig(configName);
                 producer.setMqConfig(config);
             }
 

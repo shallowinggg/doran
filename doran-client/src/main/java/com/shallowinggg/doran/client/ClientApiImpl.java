@@ -1,5 +1,6 @@
 package com.shallowinggg.doran.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.shallowinggg.doran.client.resolver.DefaultInetAddressChecker;
 import com.shallowinggg.doran.client.resolver.InetAddressChecker;
 import com.shallowinggg.doran.common.*;
@@ -8,6 +9,11 @@ import com.shallowinggg.doran.common.exception.NetworkException;
 import com.shallowinggg.doran.common.exception.SystemException;
 import com.shallowinggg.doran.common.exception.UnexpectedResponseException;
 import com.shallowinggg.doran.common.util.Assert;
+import com.shallowinggg.doran.common.util.PojoHeaderConverter;
+import com.shallowinggg.doran.common.util.retry.Retryer;
+import com.shallowinggg.doran.common.util.retry.RetryerBuilder;
+import com.shallowinggg.doran.common.util.retry.StopStrategies;
+import com.shallowinggg.doran.common.util.retry.WaitStrategies;
 import com.shallowinggg.doran.transport.RemotingClient;
 import com.shallowinggg.doran.transport.exception.RemotingCommandException;
 import com.shallowinggg.doran.transport.exception.RemotingConnectException;
@@ -21,12 +27,14 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 /**
  * @author shallowinggg
@@ -95,6 +103,15 @@ public class ClientApiImpl {
         header.setClientId(clientId);
         header.setClientName(clientName);
 
+        Retryer<Object> retry = RetryerBuilder.newBuilder().retryIfException()
+                .withWaitStrategy(WaitStrategies.fibonacciWait(10L, TimeUnit.SECONDS))
+                .withStopStrategy(StopStrategies.stopAfterAttempt(5))
+                .withRetryListener(attempt -> {
+                    if(LOGGER.isInfoEnabled()) {
+                        LOGGER.info("");
+                    }
+                }).build();
+
         clientOuterExecutor.execute(() -> {
             RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.REGISTER_CLIENT, header);
             try {
@@ -108,7 +125,7 @@ public class ClientApiImpl {
 
                         int configNums = responseHeader.getHoldingMqConfigNums();
                         if (configNums != 0) {
-                            List<MqConfig> configs = RemotingSerializable.decodeArray(response.getBody(), MqConfig.class);
+                            List<MQConfig> configs = RemotingSerializable.decodeArray(response.getBody(), MQConfig.class);
                             this.controller.getConfigManager().registerMqConfigs(configs);
                         }
                         break;
@@ -133,23 +150,25 @@ public class ClientApiImpl {
 
     }
 
-    @NotNull
-    public MqConfig requestConfig(String configName, int timeoutMillis) {
-        final RequestMqConfigRequestHeader header = new RequestMqConfigRequestHeader();
+
+    public MQConfig requestConfig(String configName, int timeoutMillis) {
+        final RequestMQConfigRequestHeader header = new RequestMQConfigRequestHeader();
         header.setConfigName(configName);
 
+        // TODO: 增加重试逻辑
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.REQUEST_CONFIG, header);
+        RemotingCommand response = null;
         try {
-            RemotingCommand response = this.client.invokeSync(null, request, timeoutMillis);
+            response = this.client.invokeSync(null, request, timeoutMillis);
 
             switch (response.getCode()) {
                 case ResponseCode.SUCCESS:
-                    SendMqConfigResponseHeader responseHeader = response.decodeCommandCustomHeader(SendMqConfigResponseHeader.class);
+                    RequestMQConfigResponseHeader responseHeader = response.decodeCommandCustomHeader(RequestMQConfigResponseHeader.class);
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Request MQ Config {} success", configName);
                     }
 
-                    return MqConfig.obtainFromMqConfigHeader(responseHeader);
+                    return PojoHeaderConverter.responseHeader2MQConfig(responseHeader);
                 case ResponseCode.CONFIG_NOT_EXIST:
                     throw new ConfigNotExistException(configName);
                 default:
@@ -161,13 +180,27 @@ public class ClientApiImpl {
                 LOGGER.error("Request config {} fail", configName, e);
             }
             throw new NetworkException();
-        } catch (RemotingCommandException e) {
+        } catch (RemotingCommandException | JsonProcessingException e) {
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Request config {} fail", configName, e);
+                LOGGER.error("Request config {} fail, response: {}", configName, response, e);
             }
             throw new SystemException(e);
         }
     }
 
+    @Immutable
+    private static class RetryExceptionPredictor implements Predicate<Throwable> {
+        private static final RetryExceptionPredictor INSTANCE = new RetryExceptionPredictor();
+
+        RetryExceptionPredictor create() {
+            return INSTANCE;
+        }
+
+        @Override
+        public boolean test(Throwable throwable) {
+            return throwable instanceof RemotingCommandException ||
+                    throwable instanceof InterruptedException;
+        }
+    }
 
 }

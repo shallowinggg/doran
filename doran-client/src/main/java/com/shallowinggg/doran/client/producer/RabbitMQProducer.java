@@ -1,12 +1,10 @@
 package com.shallowinggg.doran.client.producer;
 
-import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.MessageProperties;
 import com.shallowinggg.doran.client.Message;
-import com.shallowinggg.doran.common.Domain;
-import com.shallowinggg.doran.common.MqConfig;
+import com.shallowinggg.doran.common.MQConfig;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -16,28 +14,14 @@ import java.util.concurrent.TimeUnit;
  */
 public class RabbitMQProducer extends AbstractBuiltInProducer {
     private final Channel channel;
-    private final String exchangeName;
-    private final String key;
+    private String exchangeName;
+    private String key;
 
-    public RabbitMQProducer(final MqConfig config) {
+    public RabbitMQProducer(final MQConfig config) {
         Connection connection = ConnectionFactoryCache.getInstance().getRabbitMQConnection(config);
         try {
             Channel channel = connection.createChannel();
-            String exchangeName = null;
-            String key = null;
-            if(Domain.PTP == config.getDomain()) {
-                exchangeName = config.getDomainName();
-                String queueName = exchangeName + "_queue";
-                key = exchangeName + "_key";
-                channel.exchangeDeclare(exchangeName, BuiltinExchangeType.DIRECT, true, false, null);
-                channel.queueDeclare(queueName, true, false, false, null);
-                channel.queueBind(queueName, exchangeName, key);
-            } else {
-                //TODO: broadcast
-            }
 
-            this.exchangeName = exchangeName;
-            this.key = key;
             this.channel = channel;
         } catch (IOException e) {
             throw new RuntimeException(e);

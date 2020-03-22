@@ -1,6 +1,6 @@
 package com.shallowinggg.doran.client;
 
-import com.shallowinggg.doran.common.MqConfig;
+import com.shallowinggg.doran.common.MQConfig;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EventListener;
@@ -24,5 +24,5 @@ public interface MqConfigUpdateListener extends EventListener {
      *
      * @param newConfig config that has updated
      */
-    void onMqConfigUpdate(@NotNull MqConfig newConfig);
+    void onMqConfigUpdate(@NotNull MQConfig newConfig);
 }

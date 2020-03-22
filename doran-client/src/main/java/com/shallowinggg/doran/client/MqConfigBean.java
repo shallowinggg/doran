@@ -1,27 +1,27 @@
 package com.shallowinggg.doran.client;
 
-import com.shallowinggg.doran.common.MqConfig;
+import com.shallowinggg.doran.common.MQConfig;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A common bean interface defines setter and getter method
- * for {@link MqConfig}.
+ * for {@link MQConfig}.
  *
  * @author shallowinggg
  */
 public interface MqConfigBean {
 
     /**
-     * Setter method for {@link MqConfig}.
+     * Setter method for {@link MQConfig}.
      *
-     * @param mqConfig MqConfig to be set
+     * @param mqConfig MQConfig to be set
      */
-    void setMqConfig(@NotNull MqConfig mqConfig);
+    void setMqConfig(@NotNull MQConfig mqConfig);
 
     /**
-     * Getter method for {@link MqConfig}.
+     * Getter method for {@link MQConfig}.
      *
-     * @return MqConfig
+     * @return MQConfig
      */
-    MqConfig getMqConfig();
+    MQConfig getMqConfig();
 }

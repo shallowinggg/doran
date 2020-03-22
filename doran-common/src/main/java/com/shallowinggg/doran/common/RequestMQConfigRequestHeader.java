@@ -8,7 +8,7 @@ import com.shallowinggg.doran.transport.exception.RemotingCommandException;
 /**
  * @author shallowinggg
  */
-public class RequestMqConfigRequestHeader implements CommandCustomHeader {
+public class RequestMQConfigRequestHeader implements CommandCustomHeader {
     @CFNotNull
     private String configName;
 

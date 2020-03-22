@@ -1,6 +1,8 @@
 package com.shallowinggg.doran.server;
 
 import com.shallowinggg.doran.common.*;
+import com.shallowinggg.doran.common.util.PojoHeaderConverter;
+import com.shallowinggg.doran.common.RequestMQConfigResponseHeader;
 import com.shallowinggg.doran.transport.exception.RemotingCommandException;
 import com.shallowinggg.doran.transport.netty.NettyRequestProcessor;
 import com.shallowinggg.doran.transport.protocol.RemotingCommand;
@@ -67,7 +69,7 @@ public class ServerCoreProcessor implements NettyRequestProcessor {
             responseHeader.setHoldingMqConfigNums(0);
         } else {
             ClientMetaInfo clientMetaInfo = manager.getClientMetaInfo(clientId);
-            final Collection<MqConfig> mqConfigs = clientMetaInfo.holdingConfigs();
+            final Collection<MQConfig> mqConfigs = clientMetaInfo.holdingConfigs();
             if (mqConfigs.isEmpty()) {
                 responseHeader.setHoldingMqConfigNums(0);
             } else {
@@ -92,24 +94,16 @@ public class ServerCoreProcessor implements NettyRequestProcessor {
      * @throws RemotingCommandException if read request's header fail
      */
     public RemotingCommand requestMqConfig(final RemotingCommand request) throws RemotingCommandException {
-        final RemotingCommand response = RemotingCommand.createResponseCommand(RequestMqConfigResponseHeader.class);
-        final RequestMqConfigResponseHeader responseHeader = (RequestMqConfigResponseHeader) response.readCustomHeader();
-        final RequestMqConfigRequestHeader requestHeader = request.decodeCommandCustomHeader(RequestMqConfigRequestHeader.class);
+        final RemotingCommand response = RemotingCommand.createResponseCommand(RequestMQConfigResponseHeader.class);
+        final RequestMQConfigResponseHeader responseHeader = (RequestMQConfigResponseHeader) response.readCustomHeader();
+        final RequestMQConfigRequestHeader requestHeader = request.decodeCommandCustomHeader(RequestMQConfigRequestHeader.class);
 
         String configName = requestHeader.getConfigName();
-        final MqConfigManager mqConfigManager = this.controller.getMqConfigManager();
+        final MQConfigManager mqConfigManager = this.controller.getMqConfigManager();
 
         if (mqConfigManager.containsConfig(configName)) {
-            MqConfig config = mqConfigManager.getConfig(configName);
-            responseHeader.setName(config.getName());
-            responseHeader.setUrls(config.getUrls());
-            responseHeader.setUsername(config.getUsername());
-            responseHeader.setPassword(config.getPassword());
-            responseHeader.setDomain(config.getDomain().getType());
-            responseHeader.setDomainName(config.getDomainName());
-            responseHeader.setThreadNum(config.getThreadNum());
-            responseHeader.setTimestamp(config.getTimestamp());
-
+            MQConfig config = mqConfigManager.getConfig(configName);
+            PojoHeaderConverter.mqConfig2ResponseHeader(config, responseHeader);
             response.setCode(ResponseCode.SUCCESS);
         } else {
             response.setCode(ResponseCode.CONFIG_NOT_EXIST);

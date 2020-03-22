@@ -1,6 +1,7 @@
 package com.shallowinggg.doran.client;
 
-import com.shallowinggg.doran.common.MqConfig;
+import com.shallowinggg.doran.common.EmptyMQConfig;
+import com.shallowinggg.doran.common.MQConfig;
 import com.shallowinggg.doran.common.exception.ConfigNotExistException;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -11,20 +12,20 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manager {@link MqConfig}s for one client.
+ * Manager {@link MQConfig}s for one client.
  *
  * @author shallowinggg
  */
 public class ConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigManager.class);
-    private static final MqConfig NON_EXIST_CONFIG = new MqConfig();
+    private static final MQConfig NON_EXIST_CONFIG = new EmptyMQConfig();
 
     private final ClientController controller;
 
     /**
-     * configName -> MqConfig
+     * configName -> MQConfig
      */
-    private final Map<String, MqConfig> configMap;
+    private final Map<String, MQConfig> configMap;
 
 
 
@@ -35,9 +36,9 @@ public class ConfigManager {
     }
 
     @NotNull
-    public MqConfig getConfig(String configName, int timeoutMillis) {
+    public MQConfig getConfig(String configName, int timeoutMillis) {
         if (configMap.containsKey(configName)) {
-            MqConfig config = configMap.get(configName);
+            MQConfig config = configMap.get(configName);
             if (config == NON_EXIST_CONFIG) {
                 throw new ConfigNotExistException(configName);
             }
@@ -51,7 +52,7 @@ public class ConfigManager {
                 return configMap.get(configName);
             }
 
-            MqConfig config;
+            MQConfig config;
             try {
                 config = controller.getClientApiImpl().requestConfig(configName, timeoutMillis);
                 configMap.put(configName, config);
@@ -63,8 +64,8 @@ public class ConfigManager {
         }
     }
 
-    public void registerMqConfigs(List<MqConfig> mqConfigs) {
-        for (MqConfig config : mqConfigs) {
+    public void registerMqConfigs(List<MQConfig> mqConfigs) {
+        for (MQConfig config : mqConfigs) {
             this.configMap.putIfAbsent(config.getName(), config);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Register MQ Config {}", config);

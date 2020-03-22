@@ -5,7 +5,7 @@ import com.shallowinggg.doran.client.Message;
 import com.shallowinggg.doran.client.MqConfigBean;
 import com.shallowinggg.doran.client.chooser.BuiltInProducerChooserFactory;
 import com.shallowinggg.doran.client.chooser.ObjectChooser;
-import com.shallowinggg.doran.common.MqConfig;
+import com.shallowinggg.doran.common.MQConfig;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.common.util.JarDependent;
@@ -30,7 +30,7 @@ public class DefaultProducer implements MqConfigBean {
     private static final int REBUILDING = 3;
     private static final int SHUTDOWN = 4;
 
-    private volatile MqConfig config;
+    private volatile MQConfig config;
     private final Counter counter;
     private BuiltInProducer[] producers;
     private ObjectChooser<BuiltInProducer> producerChooser;
@@ -76,10 +76,10 @@ public class DefaultProducer implements MqConfigBean {
     }
 
     @Override
-    public void setMqConfig(@NotNull MqConfig newConfig) {
+    public void setMqConfig(@NotNull MQConfig newConfig) {
         Assert.notNull(newConfig, "'newConfig' must not be null");
         this.state = REBUILDING;
-        final MqConfig oldConfig = this.config;
+        final MQConfig oldConfig = this.config;
         final int num = newConfig.getThreadNum();
         final String configName = newConfig.getName();
 
@@ -130,11 +130,11 @@ public class DefaultProducer implements MqConfigBean {
     }
 
     @Override
-    public MqConfig getMqConfig() {
+    public MQConfig getMqConfig() {
         return config;
     }
 
-    private BuiltInProducer createProducer(final MqConfig config) {
+    private BuiltInProducer createProducer(final MQConfig config) {
         switch (JarDependent.mqType()) {
             case RabbitMQ:
                 return new RabbitMQProducer(config);
@@ -145,7 +145,7 @@ public class DefaultProducer implements MqConfigBean {
         }
     }
 
-    private static boolean onlyThreadNumChanged(MqConfig oldConfig, MqConfig newConfig) {
+    private static boolean onlyThreadNumChanged(MQConfig oldConfig, MQConfig newConfig) {
         return oldConfig.equalsIgnoreThreadNum(newConfig) &&
                 oldConfig.getThreadNum() != newConfig.getThreadNum();
     }
