@@ -7,16 +7,12 @@ import com.shallowinggg.doran.common.MQConfig;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.transport.netty.NettyClientConfig;
-import io.netty.util.concurrent.DefaultEventExecutorGroup;
-import io.netty.util.concurrent.EventExecutorGroup;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.SortedMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author shallowinggg
@@ -30,7 +26,15 @@ public class ClientController {
     private final MetricRegistry consumerMetricRegistry;
     private ScheduledExecutorService heartBeatExecutor;
     private final ClientConfig clientConfig;
-    private EventExecutorGroup asyncExecutor;
+
+    /**
+     * This executor is provided to handle async tasks,
+     * like register client, request MQ config etc.
+     * <p>
+     * Most of this tasks are I/O intensive, so its maximum
+     * pool size should be a little big.
+     */
+    private ExecutorService asyncExecutor;
 
     public ClientController(final NettyClientConfig config, final ClientConfig clientConfig) {
         this.configManager = new ConfigManager(this);
@@ -45,7 +49,8 @@ public class ClientController {
         this.clientApiImpl.updateServerAddress(clientConfig.getServerAddr());
         this.heartBeatExecutor = new ScheduledThreadPoolExecutor(1,
                 new ThreadFactoryImpl("heartBeat_", true));
-        this.asyncExecutor = new DefaultEventExecutorGroup(Runtime.getRuntime().availableProcessors(),
+        this.asyncExecutor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(),
+                20, 2, TimeUnit.MINUTES, new LinkedBlockingQueue<>(100),
                 new ThreadFactoryImpl("clientAsync_"));
     }
 
@@ -84,7 +89,7 @@ public class ClientController {
     public void shutdown() {
         this.clientApiImpl.shutdown();
         this.heartBeatExecutor.shutdown();
-        this.asyncExecutor.shutdownGracefully();
+        this.asyncExecutor.shutdown();
     }
 
     public DefaultProducer createProducer(String configName) {
@@ -97,11 +102,10 @@ public class ClientController {
             final Counter messageCounter = producerMetricRegistry.counter(configName);
             final DefaultProducer producer = new DefaultProducer(configName, messageCounter);
             if (async) {
-                asyncExecutor.submit(() -> getMqConfig(configName))
-                        .addListener(f -> {
-                            final MQConfig config = (MQConfig) f.get();
-                            producer.setMqConfig(config);
-                        });
+                asyncExecutor.submit(() -> {
+                    MQConfig config = getMqConfig(configName);
+                    producer.setMqConfig(config);
+                });
             } else {
                 final MQConfig config = getMqConfig(configName);
                 producer.setMqConfig(config);

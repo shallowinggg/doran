@@ -49,7 +49,11 @@ public class ConfigManager {
         // TODO: use more compatibility way
         synchronized (configName.intern()) {
             if (configMap.containsKey(configName)) {
-                return configMap.get(configName);
+                MQConfig config = configMap.get(configName);
+                if (config == NON_EXIST_CONFIG) {
+                    throw new ConfigNotExistException(configName);
+                }
+                return config;
             }
 
             MQConfig config;

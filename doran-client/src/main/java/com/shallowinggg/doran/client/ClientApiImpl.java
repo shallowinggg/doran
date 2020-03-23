@@ -38,14 +38,7 @@ public class ClientApiImpl {
             .retryIfException()
             .withWaitStrategy(WaitStrategies.fibonacciWait(10L, TimeUnit.SECONDS))
             .withStopStrategy(StopStrategies.stopAfterAttempt(5))
-            .withRetryListener(attempt -> {
-                if (attempt.hasException()) {
-                    if (LOGGER.isWarnEnabled()) {
-                        Throwable t = attempt.getExceptionCause();
-                        LOGGER.warn("Task executes fail, retry count: {}, ex: {}", attempt.getAttemptNumber(), t.getMessage());
-                    }
-                }
-            }).build();
+            .build();
 
     public ClientApiImpl(final ClientController controller,
                          final NettyClientConfig nettyClientConfig) {
@@ -126,20 +119,24 @@ public class ClientApiImpl {
                 } catch (InterruptedException | RemotingCommandException e) {
                     // this exceptions will be handle in RetryException catch block
                     // if retry fail.
-                    if (LOGGER.isErrorEnabled()) {
-                        LOGGER.error("Register client {} to server {} fail", clientId, serverAddr, e);
+                    if (LOGGER.isWarnEnabled()) {
+                        LOGGER.warn("Register client {} to server {} fail", clientId, serverAddr, e);
                     }
                     throw e;
                 }
             });
         } catch (ExecutionException e) {
             // handle RuntimeException for UnexpectedResponseException
-            throw (RuntimeException) e.getCause();
+            RuntimeException cause = (RuntimeException) e.getCause();
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Register client {} to server {} fail", clientId, serverAddr, cause);
+            }
+            throw cause;
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Retry count {} has exhausted, cause: ", attempt.getAttemptNumber(),
-                        attempt.getExceptionCause());
+                LOGGER.error("Register client {} to server {} fail, cause: retry count {} has exhausted",
+                        clientId, serverAddr, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
         }
@@ -190,20 +187,24 @@ public class ClientApiImpl {
                 } catch (InterruptedException | RemotingCommandException | JsonProcessingException e) {
                     // this exceptions will be handle in RetryException catch block
                     // if retry fail.
-                    if (LOGGER.isErrorEnabled()) {
-                        LOGGER.error("Request config {} fail", configName, e);
+                    if (LOGGER.isWarnEnabled()) {
+                        LOGGER.warn("Request config {} fail", configName, e);
                     }
                     throw e;
                 }
             });
         } catch (ExecutionException e) {
             // handle RuntimeException for ConfigNotExistException and UnexpectedResponseException
-            throw (RuntimeException) e.getCause();
+            RuntimeException cause = (RuntimeException) e.getCause();
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Request config {} fail", configName, cause);
+            }
+            throw cause;
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Retry count {} has exhausted, cause: ", attempt.getAttemptNumber(),
-                        attempt.getExceptionCause());
+                LOGGER.error("Request config {} fail, cause: retry count {} has exhausted",
+                        configName, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
         }
