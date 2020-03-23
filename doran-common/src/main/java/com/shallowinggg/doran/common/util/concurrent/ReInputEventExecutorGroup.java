@@ -1,9 +1,8 @@
 package com.shallowinggg.doran.common.util.concurrent;
 
-import io.netty.util.concurrent.EventExecutor;
-import io.netty.util.concurrent.MultithreadEventExecutorGroup;
-import io.netty.util.concurrent.RejectedExecutionHandler;
-import io.netty.util.concurrent.RejectedExecutionHandlers;
+import com.shallowinggg.doran.common.util.Assert;
+import io.netty.util.concurrent.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ThreadFactory;
 
@@ -25,11 +24,26 @@ public class ReInputEventExecutorGroup extends MultithreadEventExecutorGroup {
 
     @Override
     protected EventExecutor newChild(ThreadFactory threadFactory, Object... args) throws Exception {
-        return new ReInputEventExecutor(this, threadFactory, (Integer)args[0], (RejectedExecutionHandler)args[1]);
+        return new ReInputEventExecutor(this, threadFactory, (Integer) args[0], (RejectedExecutionHandler) args[1]);
     }
 
     @Override
-    public ReInputEventExecutor next() {
-        return (ReInputEventExecutor) super.next();
+    public EventExecutor next() {
+        return super.next();
+    }
+
+    /**
+     * Set transfer EventExecutorGroup for every child.
+     * <p>
+     * This will notify child to transfer its all tasks
+     * to the given group.
+     *
+     * @param transferGroup the EventExecutorGroup that tasks will be transferred to
+     */
+    public void setTransferGroup(@NotNull final EventExecutorGroup transferGroup) {
+        Assert.notNull(transferGroup, "'transferGroup' must not be null");
+        for (EventExecutor e : children()) {
+            ((ReInputEventExecutor) e).setTransferGroup(transferGroup);
+        }
     }
 }

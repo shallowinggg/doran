@@ -6,9 +6,9 @@ import com.shallowinggg.doran.client.MqConfigBean;
 import com.shallowinggg.doran.client.chooser.BuiltInProducerChooserFactory;
 import com.shallowinggg.doran.client.chooser.ObjectChooser;
 import com.shallowinggg.doran.common.MQConfig;
+import com.shallowinggg.doran.common.RabbitMQConfig;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
 import com.shallowinggg.doran.common.util.Assert;
-import com.shallowinggg.doran.common.util.JarDependent;
 import com.shallowinggg.doran.common.util.concurrent.DoranEventExecutor;
 import com.shallowinggg.doran.common.util.concurrent.DoranEventExecutorGroup;
 import com.shallowinggg.doran.common.util.concurrent.ReInputEventExecutorGroup;
@@ -62,15 +62,24 @@ public class DefaultProducer implements MqConfigBean {
         if (!isRunning(state)) {
             throw new IllegalStateException("producer has not initialized");
         }
-        if(isRebuilding(state)) {
-            // send message to reInput executor
+        if (isRebuilding(state)) {
+            reInputExecutor.submit(() -> {
+                BuiltInProducer producer = producerChooser.next();
+                EventExecutor executor = producer.executor();
+                if (executor.inEventLoop()) {
+                    producer.sendMessage(msg);
+                } else {
+                    executor.submit(() -> producer.sendMessage(msg));
+                }
+            });
         }
-        // send message to send executor and use chooser to select producer
+        BuiltInProducer producer = producerChooser.next();
+        producer.executor().submit(() -> producer.sendMessage(msg));
         counter.inc();
         return null;
     }
 
-    public Future<String> sendMessage(byte[] msg, long delay, TimeUnit unit) {
+    public Future<String> sendMessage(Message msg, long delay, TimeUnit unit) {
         counter.inc();
         return null;
     }
@@ -111,11 +120,11 @@ public class DefaultProducer implements MqConfigBean {
         }
         producerChooser = BuiltInProducerChooserFactory.INSTANCE.newChooser(newProducers);
 
-        if(this.sendExecutor != null) {
-            for(EventExecutor executor : this.sendExecutor) {
+        if (this.sendExecutor != null) {
+            for (EventExecutor executor : this.sendExecutor) {
                 DoranEventExecutor doranEventExecutor = (DoranEventExecutor) executor;
                 List<Runnable> tasks = doranEventExecutor.drainQueue();
-                for(Runnable task : tasks) {
+                for (Runnable task : tasks) {
                     sendExecutor.execute(task);
                 }
             }
@@ -124,7 +133,7 @@ public class DefaultProducer implements MqConfigBean {
         this.sendExecutor = sendExecutor;
         this.producers = newProducers;
         this.producerChooser = producerChooser;
-        this.reInputExecutor.next().setTransferGroup(sendExecutor);
+        this.reInputExecutor.setTransferGroup(sendExecutor);
         this.config = newConfig;
         this.state = RUNNING;
     }
@@ -135,13 +144,14 @@ public class DefaultProducer implements MqConfigBean {
     }
 
     private BuiltInProducer createProducer(final MQConfig config) {
-        switch (JarDependent.mqType()) {
+        switch (config.getType()) {
             case RabbitMQ:
-                return new RabbitMQProducer(config);
+                RabbitMQConfig rabbitMQConfig = (RabbitMQConfig) config;
+                return new RabbitMQProducer(rabbitMQConfig);
             case ActiveMQ:
             case UNKNOWN:
             default:
-                throw new IllegalStateException("");
+                throw new IllegalArgumentException("");
         }
     }
 

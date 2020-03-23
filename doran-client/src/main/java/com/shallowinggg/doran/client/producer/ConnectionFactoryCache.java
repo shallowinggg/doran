@@ -2,6 +2,7 @@ package com.shallowinggg.doran.client.producer;
 
 import com.shallowinggg.doran.client.IllegalConnectionUriException;
 import com.shallowinggg.doran.common.MQConfig;
+import com.shallowinggg.doran.common.MQType;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
 import java.io.IOException;
@@ -78,12 +79,14 @@ public class ConnectionFactoryCache {
 
     private static class MQConfigInner {
         private final String name;
+        private final MQType type;
         private final String uri;
         private final String username;
         private final String password;
 
         MQConfigInner(MQConfig config) {
             this.name = config.getName();
+            this.type = config.getType();
             this.uri = config.getUri();
             this.username = config.getUsername();
             this.password = config.getPassword();
@@ -99,6 +102,7 @@ public class ConnectionFactoryCache {
             }
             MQConfigInner inner = (MQConfigInner) o;
             return name.equals(inner.name) &&
+                    type == inner.type &&
                     uri.equals(inner.uri) &&
                     username.equals(inner.username) &&
                     password.equals(inner.password);
@@ -106,7 +110,7 @@ public class ConnectionFactoryCache {
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, uri, username, password);
+            return Objects.hash(name, type, uri, username, password);
         }
     }
 }

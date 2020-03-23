@@ -51,7 +51,7 @@ public class ClientController {
 
     public void start() {
         this.clientApiImpl.start();
-        this.registerClient();
+        this.asyncExecutor.execute(this::registerClient);
         this.heartBeatExecutor.scheduleAtFixedRate(() -> {
             try {
                 this.sendHeartBeat();

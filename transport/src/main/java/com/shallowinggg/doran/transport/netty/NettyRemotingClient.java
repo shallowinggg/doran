@@ -98,7 +98,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
 
         int publicThreadNums = nettyClientConfig.getClientCallbackExecutorThreads();
         if (publicThreadNums <= 0) {
-            publicThreadNums = 4;
+            publicThreadNums = 2;
         }
 
         this.publicExecutor = Executors.newFixedThreadPool(publicThreadNums, new ThreadFactory() {
