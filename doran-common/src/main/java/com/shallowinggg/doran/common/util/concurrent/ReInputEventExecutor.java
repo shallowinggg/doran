@@ -52,7 +52,7 @@ public class ReInputEventExecutor extends SingleThreadEventExecutor {
         do {
             this.lock.acquireUninterruptibly();
             do {
-                Runnable task = this.takeTask();
+                Runnable task = this.pollTask();
                 if (task != null) {
                     transferGroup.execute(task);
                     this.updateLastExecutionTime();

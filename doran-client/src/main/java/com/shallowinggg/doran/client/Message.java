@@ -10,6 +10,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -215,4 +216,11 @@ public class Message implements Serializable {
         }
     }
 
+    @Override
+    public String toString() {
+        return "Message{" +
+                "properties=" + properties +
+                ", body=" + Arrays.toString(body) +
+                '}';
+    }
 }

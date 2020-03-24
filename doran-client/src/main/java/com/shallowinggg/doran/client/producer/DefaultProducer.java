@@ -108,13 +108,16 @@ public class DefaultProducer implements MqConfigBean {
                 System.arraycopy(this.producers, 0, newProducers, 0, num);
             }
 
+            // TODO: 清除原来的定时任务
             for (int i = 0; i < num; ++i) {
                 newProducers[i].register(sendExecutor.next());
+                newProducers[i].startResendTask();
             }
         } else {
             for (int i = 0; i < num; ++i) {
                 BuiltInProducer producer = createProducer(newConfig);
                 producer.register(sendExecutor.next());
+                producer.startResendTask();
                 newProducers[i] = producer;
             }
         }

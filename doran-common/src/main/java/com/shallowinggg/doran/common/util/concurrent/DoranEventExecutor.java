@@ -18,7 +18,7 @@ import java.util.concurrent.ThreadFactory;
  */
 public class DoranEventExecutor extends SingleThreadEventExecutor {
     static final int DEFAULT_MAX_PENDING_EXECUTOR_TASKS =
-            Math.max(128, SystemPropertyUtil.getInt("com.shallowinggg.eventExecutor.maxPendingTasks", 2147483647));
+            Math.max(1024, SystemPropertyUtil.getInt("com.shallowinggg.eventExecutor.maxPendingTasks", 2147483647));
     private BlockingQueue<Runnable> workQueue;
 
     protected DoranEventExecutor(EventExecutorGroup parent, ThreadFactory threadFactory) {
@@ -61,11 +61,7 @@ public class DoranEventExecutor extends SingleThreadEventExecutor {
     @Override
     protected void run() {
         do {
-            Runnable task = this.takeTask();
-            if (task != null) {
-                task.run();
-                this.updateLastExecutionTime();
-            }
+            this.runAllTasks();
         } while (!this.confirmShutdown());
     }
 }

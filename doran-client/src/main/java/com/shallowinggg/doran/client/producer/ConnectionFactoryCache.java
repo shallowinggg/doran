@@ -29,6 +29,7 @@ public class ConnectionFactoryCache {
     private static final ConnectionFactoryCache INSTANCE = new ConnectionFactoryCache();
     private final Map<MQConfigInner, com.rabbitmq.client.Connection> rabbitMQCache = new ConcurrentHashMap<>();
     private final Map<MQConfigInner, javax.jms.Connection> activeMQCache = new ConcurrentHashMap<>();
+    // TODO: 缓存ConnectionFactory，避免共用一条连接压力过大
 
     private final Retryer<Void> buildConnectionRetryer = RetryerBuilder.<Void>newBuilder()
             .retryIfException()

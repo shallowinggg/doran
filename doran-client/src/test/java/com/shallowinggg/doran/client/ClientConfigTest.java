@@ -21,12 +21,7 @@ public class ClientConfigTest {
 
     @Test
     public void testLog() {
-        try {
-            throw new RuntimeException("error message");
-        } catch (RuntimeException e) {
-            if(LOGGER.isErrorEnabled()) {
-                LOGGER.error("fail, cause: {}", e.getMessage(), e);
-            }
-        }
+        Runnable r = () -> System.out.println("111");
+
     }
 }
