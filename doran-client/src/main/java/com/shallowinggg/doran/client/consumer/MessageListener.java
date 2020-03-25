@@ -8,5 +8,5 @@ import java.util.EventListener;
  * @author shallowinggg
  */
 public interface MessageListener extends EventListener {
-    void onMessage(Message message);
+    boolean onMessage(Message message);
 }

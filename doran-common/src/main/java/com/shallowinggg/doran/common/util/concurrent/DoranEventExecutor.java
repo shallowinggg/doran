@@ -46,7 +46,7 @@ public class DoranEventExecutor extends SingleThreadEventExecutor {
      */
     public List<Runnable> drainQueue() {
         BlockingQueue<Runnable> q = workQueue;
-        ArrayList<Runnable> taskList = new ArrayList<>();
+        ArrayList<Runnable> taskList = new ArrayList<>(q.size());
         q.drainTo(taskList);
         if (!q.isEmpty()) {
             for (Runnable r : q.toArray(new Runnable[0])) {

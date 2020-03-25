@@ -17,7 +17,6 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,14 +35,14 @@ public class DefaultProducer implements MqConfigBean {
     private ObjectChooser<BuiltInProducer> producerChooser;
     private EventExecutorGroup sendExecutor;
     private final ReInputEventExecutorGroup reInputExecutor;
-    private volatile int state = NEW;
+    private volatile int state;
 
     private static boolean runStateLessThan(int c, int s) {
         return c < s;
     }
 
     private static boolean isRunning(int c) {
-        return c > STARTING && c < SHUTDOWN;
+        return c == RUNNING || c == REBUILDING;
     }
 
     private static boolean isRebuilding(int c) {
@@ -57,10 +56,13 @@ public class DefaultProducer implements MqConfigBean {
         this.state = STARTING;
     }
 
-    public Future<String> sendMessage(Message msg) {
+    public void sendMessage(Message msg) {
         final int state = this.state;
+        if (state == SHUTDOWN) {
+            throw new IllegalStateException("Producer has been closed");
+        }
         if (!isRunning(state)) {
-            throw new IllegalStateException("producer has not initialized");
+            throw new IllegalStateException("Producer has not initialized");
         }
         if (isRebuilding(state)) {
             reInputExecutor.submit(() -> {
@@ -72,16 +74,36 @@ public class DefaultProducer implements MqConfigBean {
                     executor.submit(() -> producer.sendMessage(msg));
                 }
             });
+        } else {
+            BuiltInProducer producer = producerChooser.next();
+            producer.executor().submit(() -> producer.sendMessage(msg));
         }
-        BuiltInProducer producer = producerChooser.next();
-        producer.executor().submit(() -> producer.sendMessage(msg));
         counter.inc();
-        return null;
     }
 
-    public Future<String> sendMessage(Message msg, long delay, TimeUnit unit) {
+    public void sendMessage(Message msg, long delay, TimeUnit unit) {
+        final int state = this.state;
+        if (state == SHUTDOWN) {
+            throw new IllegalStateException("Producer has been closed");
+        }
+        if (!isRunning(state)) {
+            throw new IllegalStateException("Producer has not initialized");
+        }
+        if (isRebuilding(state)) {
+            reInputExecutor.submit(() -> {
+                BuiltInProducer producer = producerChooser.next();
+                EventExecutor executor = producer.executor();
+                if (executor.inEventLoop()) {
+                    producer.sendMessage(msg, delay, unit);
+                } else {
+                    executor.submit(() -> producer.sendMessage(msg, delay, unit));
+                }
+            });
+        } else {
+            BuiltInProducer producer = producerChooser.next();
+            producer.executor().submit(() -> producer.sendMessage(msg));
+        }
         counter.inc();
-        return null;
     }
 
     @Override
@@ -93,7 +115,7 @@ public class DefaultProducer implements MqConfigBean {
         final String configName = newConfig.getName();
 
         EventExecutorGroup sendExecutor = new DoranEventExecutorGroup(num,
-                new ThreadFactoryImpl(configName + "SendExecutor_"));
+                new ThreadFactoryImpl(configName + "ProducerExecutor_"));
         BuiltInProducer[] newProducers = new BuiltInProducer[num];
         ObjectChooser<BuiltInProducer> producerChooser;
         if (oldConfig != null && onlyThreadNumChanged(oldConfig, newConfig)) {
@@ -108,7 +130,6 @@ public class DefaultProducer implements MqConfigBean {
                 System.arraycopy(this.producers, 0, newProducers, 0, num);
             }
 
-            // TODO: 清除原来的定时任务
             for (int i = 0; i < num; ++i) {
                 newProducers[i].register(sendExecutor.next());
                 newProducers[i].startResendTask();
@@ -123,6 +144,7 @@ public class DefaultProducer implements MqConfigBean {
         }
         producerChooser = BuiltInProducerChooserFactory.INSTANCE.newChooser(newProducers);
 
+        // transfer old uncompleted tasks to new executor
         if (this.sendExecutor != null) {
             for (EventExecutor executor : this.sendExecutor) {
                 DoranEventExecutor doranEventExecutor = (DoranEventExecutor) executor;
@@ -131,6 +153,7 @@ public class DefaultProducer implements MqConfigBean {
                     sendExecutor.execute(task);
                 }
             }
+            this.sendExecutor.shutdownGracefully();
         }
 
         this.sendExecutor = sendExecutor;
@@ -144,6 +167,12 @@ public class DefaultProducer implements MqConfigBean {
     @Override
     public MQConfig getMqConfig() {
         return config;
+    }
+
+    public void close() {
+        this.state = SHUTDOWN;
+        this.reInputExecutor.shutdownGracefully();
+        this.sendExecutor.shutdownGracefully();
     }
 
     private BuiltInProducer createProducer(final MQConfig config) {

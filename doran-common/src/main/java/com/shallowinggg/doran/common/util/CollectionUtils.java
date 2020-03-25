@@ -12,7 +12,9 @@ import java.util.*;
  *
  * @author shallowinggg
  */
-public abstract class CollectionUtils {
+public final class CollectionUtils {
+
+    private CollectionUtils() {}
 
     /**
      * Return {@code true} if the supplied Collection is {@code null} or empty.
@@ -23,6 +25,17 @@ public abstract class CollectionUtils {
      */
     public static boolean isEmpty(@Nullable Collection<?> collection) {
         return (collection == null || collection.isEmpty());
+    }
+
+    /**
+     * Return {@code true} if the supplied Collection is not {@code null} and empty.
+     * Otherwise, return {@code false}.
+     *
+     * @param collection the Collection to check
+     * @return whether the given Collection is not empty
+     */
+    public static boolean isNotEmpty(@Nullable Collection<?> collection) {
+        return !isEmpty(collection);
     }
 
     /**

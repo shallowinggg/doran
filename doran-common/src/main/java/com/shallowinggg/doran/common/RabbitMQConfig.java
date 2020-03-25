@@ -32,7 +32,7 @@ public class RabbitMQConfig extends MQConfig {
 
     public RabbitMQConfig(String name, MQType type, String uri, String username, String password, int threadNum,
                           long timestamp, String json) throws JsonProcessingException {
-        super(name, type, uri, username, password, threadNum, timestamp);
+        super(name, type, uri, "", "", threadNum, timestamp);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode extFields = mapper.readTree(json);
         String exchangeName = extFields.get("exchangeName").asText();
@@ -45,7 +45,7 @@ public class RabbitMQConfig extends MQConfig {
 
     public RabbitMQConfig(String name, MQType type, String uri, String username, String password, long timestamp,
                           String exchangeName, String queueName, String routingKey) {
-        super(name, type, uri, username, password, timestamp);
+        super(name, type, uri, "", "", timestamp);
         this.exchangeName = exchangeName;
         this.queueName = queueName;
         this.routingKey = routingKey;
@@ -53,7 +53,7 @@ public class RabbitMQConfig extends MQConfig {
 
     public RabbitMQConfig(String name, MQType type, String uri, String username, String password, int threadNum,
                           long timestamp, String exchangeName, String queueName, String routingKey) {
-        super(name, type, uri, username, password, threadNum, timestamp);
+        super(name, type, uri, "", "", threadNum, timestamp);
         this.exchangeName = exchangeName;
         this.queueName = queueName;
         this.routingKey = routingKey;

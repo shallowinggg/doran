@@ -8,10 +8,35 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * The basic interface for producer. Every MQ producer
+ * should implement this interface.
+ * <p>
+ * It only supports send normal messages and delay
+ * messages currently. Other features maybe add in the
+ * future.
+ * Besides, the implementations of
+ * this interface should provide enough fault-tolerance
+ * for sending messages. When remote brokers send ack
+ * that represents message is sent success, this message
+ * can be removed from unconfirmed collection.
+ * If the message is not ack by remote brokers too long,
+ * default this time is {@link #WAIT_ACK_MILLS}, it should
+ * be resent. You can specify this time by system property
+ * "com.shallowinggg.producer.waitAckMills". This may lead
+ * to more memory cost, but it's worth it.
+ * <p>
+ * Every {@link BuiltInProducer} instance should be bound to
+ * an {@link EventExecutor}, and an {@link EventExecutor}
+ * can be bound with multiple {@link BuiltInProducer}. Every
+ * operation in the interface should be executed in the executor
+ * that it binds to. This can help avoid concurrency problems.
+ *
  * @author shallowinggg
+ * @see RabbitMQProducer
+ * @see ActiveMQProducer
  */
 public interface BuiltInProducer {
-    long WAIT_ACK_MILLS = SystemPropertyUtil.getInt("com.shallowinggg.producer.waitAckMills", 3000);
+    long WAIT_ACK_MILLS = SystemPropertyUtil.getInt("com.shallowinggg.producer.waitAckMills", 5000);
 
     /**
      * Send normal message.

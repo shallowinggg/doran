@@ -4,6 +4,7 @@ import com.rabbitmq.client.*;
 import com.shallowinggg.doran.client.Message;
 import com.shallowinggg.doran.client.RetryCountExhaustedException;
 import com.shallowinggg.doran.common.RabbitMQConfig;
+import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.common.util.retry.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
             .build();
 
     public RabbitMQProducer(final RabbitMQConfig config) {
+        Assert.notNull(config, "'config' must not be null");
         Connection connection = ConnectionFactoryCache.getInstance().getRabbitMQConnection(config);
         final String name = config.getName();
         Retryer<Channel> retryer = RetryerBuilder.<Channel>newBuilder()
@@ -48,7 +50,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
                     innerChannel.confirmSelect();
                     innerChannel.addConfirmListener(new ConfirmListener() {
                         @Override
-                        public void handleAck(long deliveryTag, boolean multiple) throws IOException {
+                        public void handleAck(long deliveryTag, boolean multiple) {
                             if (!multiple) {
                                 resendCache.delete(deliveryTag);
                                 if (LOGGER.isDebugEnabled()) {
@@ -63,7 +65,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
                         }
 
                         @Override
-                        public void handleNack(long deliveryTag, boolean multiple) throws IOException {
+                        public void handleNack(long deliveryTag, boolean multiple) {
                             if (!multiple) {
                                 if (LOGGER.isWarnEnabled()) {
                                     LOGGER.warn("Message {} is nack, wait for resend", deliveryTag);
@@ -87,7 +89,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
                     return innerChannel;
                 } catch (IOException e) {
                     if (LOGGER.isWarnEnabled()) {
-                        LOGGER.warn("Create rabbitmq channel for config {} fail, retry it", name, e);
+                        LOGGER.warn("Create rabbitmq channel for config {} fail, retry", name, e);
                     }
                     if (innerChannel != null) {
                         innerChannel.close();
@@ -101,7 +103,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Create rabbitmq channel for config {} fail, cause: retry count {} has exhausted",
+                LOGGER.error("Create rabbitmq channel for config {} fail, retry count {} has exhausted",
                         name, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
@@ -118,6 +120,14 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
             throw new IllegalStateException("Producer has not initialized success, executor is null");
         }
 
+        if (executor().inEventLoop()) {
+            sendMessageInner(message);
+        } else {
+            executor().submit(() -> sendMessageInner(message));
+        }
+    }
+
+    private void sendMessageInner(Message message) {
         byte[] msg = message.encode();
         long id = channel.getNextPublishSeqNo();
         resendCache.put(id, message);
@@ -138,7 +148,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Send message {} fail, content: {}, cause: retry count {} has exhausted",
+                LOGGER.error("Send message {} fail, content: {}, retry count {} has exhausted",
                         id, message, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
@@ -151,6 +161,14 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
             throw new IllegalStateException("Producer has not initialized success, executor is null");
         }
 
+        if (executor().inEventLoop()) {
+            sendMessageInner(message, delay, unit);
+        } else {
+            executor().submit(() -> sendMessageInner(message, delay, unit));
+        }
+    }
+
+    private void sendMessageInner(Message message, long delay, TimeUnit unit) {
         long delayMills = TimeUnit.MILLISECONDS.convert(delay, unit);
         AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                 .contentType("text/plain")
@@ -178,7 +196,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Send message {} fail, content: {}, cause: retry count {} has exhausted",
+                LOGGER.error("Send message {} fail, content: {}, retry count {} has exhausted",
                         id, message, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());

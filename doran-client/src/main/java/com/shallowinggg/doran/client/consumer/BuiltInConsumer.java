@@ -2,7 +2,10 @@ package com.shallowinggg.doran.client.consumer;
 
 import com.shallowinggg.doran.client.Message;
 import io.netty.util.concurrent.EventExecutor;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author shallowinggg
@@ -10,12 +13,11 @@ import org.jetbrains.annotations.Nullable;
 public interface BuiltInConsumer {
     Message receive();
 
-    void setMessageListener(@Nullable MessageListener listener);
+    Message receive(long timeout, TimeUnit unit) throws InterruptedException;
 
-    @Nullable
-    MessageListener getMessageListener();
+    Set<MessageListener> getMessageListeners();
 
-    void register(EventExecutor executor);
+    void register(@NotNull EventExecutor executor);
 
     EventExecutor executor();
 }

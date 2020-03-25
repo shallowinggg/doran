@@ -135,7 +135,7 @@ public class ClientApiImpl {
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Register client {} to server {} fail, cause: retry count {} has exhausted",
+                LOGGER.error("Register client {} to server {} fail, retry count {} has exhausted",
                         clientId, serverAddr, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
@@ -203,7 +203,7 @@ public class ClientApiImpl {
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Request config {} fail, cause: retry count {} has exhausted",
+                LOGGER.error("Request config {} fail, retry count {} has exhausted",
                         configName, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
