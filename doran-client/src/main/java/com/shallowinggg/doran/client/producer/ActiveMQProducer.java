@@ -1,9 +1,13 @@
 package com.shallowinggg.doran.client.producer;
 
-import com.shallowinggg.doran.client.Message;
+import com.shallowinggg.doran.client.common.ConnectionFactoryCache;
+import com.shallowinggg.doran.client.common.Message;
+import com.shallowinggg.doran.common.ActiveMQConfig;
+import com.shallowinggg.doran.common.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jms.Connection;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -11,6 +15,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class ActiveMQProducer extends AbstractBuiltInProducer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ActiveMQProducer.class);
+
+    public ActiveMQProducer(final ActiveMQConfig config) {
+        Assert.notNull(config, "'config' must not be null");
+        Connection connection = ConnectionFactoryCache.getInstance().getActiveMQConnection(config, null);
+
+    }
 
     @Override
     public void sendMessage(Message message) {

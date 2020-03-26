@@ -1,6 +1,7 @@
 package com.shallowinggg.doran.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.shallowinggg.doran.client.common.RetryCountExhaustedException;
 import com.shallowinggg.doran.client.resolver.DefaultInetAddressChecker;
 import com.shallowinggg.doran.client.resolver.InetAddressChecker;
 import com.shallowinggg.doran.common.*;

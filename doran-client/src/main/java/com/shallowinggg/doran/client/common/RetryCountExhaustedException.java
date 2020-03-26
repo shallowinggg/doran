@@ -1,4 +1,4 @@
-package com.shallowinggg.doran.client;
+package com.shallowinggg.doran.client.common;
 
 /**
  * @author shallowinggg

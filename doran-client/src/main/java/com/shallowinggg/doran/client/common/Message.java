@@ -1,4 +1,4 @@
-package com.shallowinggg.doran.client;
+package com.shallowinggg.doran.client.common;
 
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.common.util.CollectionUtils;

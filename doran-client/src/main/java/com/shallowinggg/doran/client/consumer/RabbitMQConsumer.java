@@ -1,9 +1,9 @@
 package com.shallowinggg.doran.client.consumer;
 
 import com.rabbitmq.client.*;
-import com.shallowinggg.doran.client.Message;
-import com.shallowinggg.doran.client.RetryCountExhaustedException;
-import com.shallowinggg.doran.client.producer.ConnectionFactoryCache;
+import com.shallowinggg.doran.client.common.Message;
+import com.shallowinggg.doran.client.common.RetryCountExhaustedException;
+import com.shallowinggg.doran.client.common.ConnectionFactoryCache;
 import com.shallowinggg.doran.common.RabbitMQConfig;
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.common.util.CollectionUtils;
@@ -21,7 +21,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class RabbitMQConsumer extends AbstractBuiltInConsumer {
     private static final Logger LOGGER = LoggerFactory.getLogger(RabbitMQConsumer.class);
-    private Channel channel;
+    private final RabbitMQConfig config;
+    private final Channel channel;
     private DefaultConsumer consumer;
     private final String queueName;
     private final Retryer<Message> messageRetryer = RetryerBuilder.<Message>newBuilder()
@@ -32,6 +33,7 @@ public class RabbitMQConsumer extends AbstractBuiltInConsumer {
     public RabbitMQConsumer(final RabbitMQConfig config, Set<MessageListener> listeners) {
         super(listeners);
         Assert.notNull(config, "'config' must not be null");
+        this.config = config;
         this.queueName = config.getQueueName();
 
         Connection connection = ConnectionFactoryCache.getInstance().getRabbitMQConnection(config);
@@ -101,12 +103,15 @@ public class RabbitMQConsumer extends AbstractBuiltInConsumer {
         }
 
         this.channel = channel;
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("RabbitMQ consumer build success, queue: {}", queueName);
+        }
     }
 
     @Override
     public Message receive() {
         if (this.consumer != null) {
-            throw new IllegalStateException("Rabbitmq consumer consume async");
+            throw new IllegalStateException("RabbitMQ consumer is configured as async mode, config: " + config);
         }
 
         try {
@@ -140,6 +145,6 @@ public class RabbitMQConsumer extends AbstractBuiltInConsumer {
 
     @Override
     public Message receive(long timeout, TimeUnit unit) throws InterruptedException {
-        throw new UnsupportedOperationException("RabbitMQ don't support this operations");
+        throw new UnsupportedOperationException("RabbitMQ don't support this operation");
     }
 }

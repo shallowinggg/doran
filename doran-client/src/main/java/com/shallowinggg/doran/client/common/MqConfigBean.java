@@ -1,4 +1,4 @@
-package com.shallowinggg.doran.client;
+package com.shallowinggg.doran.client.common;
 
 import com.shallowinggg.doran.common.MQConfig;
 import org.jetbrains.annotations.NotNull;

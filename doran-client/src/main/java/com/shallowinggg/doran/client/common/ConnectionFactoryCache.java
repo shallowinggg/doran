@@ -1,16 +1,14 @@
-package com.shallowinggg.doran.client.producer;
+package com.shallowinggg.doran.client.common;
 
 import com.rabbitmq.client.Recoverable;
 import com.rabbitmq.client.RecoveryListener;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
-import com.shallowinggg.doran.client.IllegalConnectionUriException;
-import com.shallowinggg.doran.client.RetryCountExhaustedException;
 import com.shallowinggg.doran.common.MQConfig;
-import com.shallowinggg.doran.common.MQType;
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.common.util.StringUtils;
 import com.shallowinggg.doran.common.util.retry.*;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +18,6 @@ import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -42,8 +39,16 @@ public class ConnectionFactoryCache {
      * config name -> Connection
      */
     private final Map<String, com.rabbitmq.client.Connection> rabbitMQCache = new ConcurrentHashMap<>();
-    private final Map<MQConfigInner, javax.jms.Connection> activeMQCache = new ConcurrentHashMap<>();
-    // TODO: 缓存ConnectionFactory，避免共用一条连接压力过大
+
+    /**
+     * uri -> ConnectionFactory
+     */
+    private final Map<String, javax.jms.ConnectionFactory> activeMQConnectionFactories
+            = new ConcurrentHashMap<>();
+    /**
+     * config name -> Connection
+     */
+    private final Map<String, javax.jms.Connection> activeMQCache = new ConcurrentHashMap<>();
 
     private final Retryer<Void> buildConnectionRetryer = RetryerBuilder.<Void>newBuilder()
             .retryIfException()
@@ -101,14 +106,14 @@ public class ConnectionFactoryCache {
                         recoverConnection.addRecoveryListener(new RecoveryListener() {
                             @Override
                             public void handleRecovery(Recoverable recoverable) {
-                                if(LOGGER.isErrorEnabled()) {
+                                if (LOGGER.isErrorEnabled()) {
                                     LOGGER.error("Connection {} lost connection", recoverable);
                                 }
                             }
 
                             @Override
                             public void handleRecoveryStarted(Recoverable recoverable) {
-                                if(LOGGER.isInfoEnabled()) {
+                                if (LOGGER.isInfoEnabled()) {
                                     LOGGER.info("Connection {} recover success", recoverable);
                                 }
                             }
@@ -140,31 +145,58 @@ public class ConnectionFactoryCache {
         return rabbitMQCache.get(name);
     }
 
-    public javax.jms.Connection getActiveMQConnection(MQConfig config) {
-        MQConfigInner inner = new MQConfigInner(config);
-        if (activeMQCache.containsKey(inner)) {
-            return activeMQCache.get(inner);
+    public javax.jms.ConnectionFactory getActiveMQConnectionFactory(String uri) {
+        Assert.isTrue(StringUtils.hasText(uri), "'uri' must has text");
+        if (activeMQConnectionFactories.containsKey(uri)) {
+            return activeMQConnectionFactories.get(uri);
+        }
+        synchronized (uri.intern()) {
+            if (activeMQConnectionFactories.containsKey(uri)) {
+                return activeMQConnectionFactories.get(uri);
+            }
+
+            try {
+                javax.jms.ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(uri);
+                activeMQConnectionFactories.put(uri, connectionFactory);
+                return connectionFactory;
+            } catch (IllegalArgumentException e) {
+                throw new IllegalConnectionUriException(uri, e.getCause());
+            }
+        }
+    }
+
+    public javax.jms.Connection getActiveMQConnection(MQConfig config, @Nullable String clientId) {
+        final String name = config.getName();
+        if (activeMQCache.containsKey(name)) {
+            return activeMQCache.get(name);
         }
 
         final String uri = config.getUri();
-        synchronized (config.getName().intern()) {
-            if (activeMQCache.containsKey(inner)) {
-                return activeMQCache.get(inner);
+        javax.jms.ConnectionFactory factory = getActiveMQConnectionFactory(uri);
+        synchronized (name.intern()) {
+            if (activeMQCache.containsKey(name)) {
+                return activeMQCache.get(name);
             }
             try {
                 buildConnectionRetryer.call(() -> {
                     try {
                         String username = config.getUsername();
                         String password = config.getPassword();
-                        javax.jms.ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(uri);
-                        javax.jms.Connection connection = connectionFactory.createConnection(username, password);
-                        activeMQCache.put(inner, connection);
+                        javax.jms.Connection connection = factory.createConnection(username, password);
+                        if(clientId != null) {
+                            connection.setClientID(clientId);
+                        }
+                        connection.start();
+                        connection.setExceptionListener(e -> {
+                            if (LOGGER.isErrorEnabled()) {
+                                LOGGER.error("ActiveMQ connection fail", e);
+                            }
+                        });
+                        activeMQCache.put(name, connection);
                         if (LOGGER.isDebugEnabled()) {
                             LOGGER.debug("Create activemq connection success, uri: {}", uri);
                         }
                         return null;
-                    } catch (IllegalArgumentException e) {
-                        throw new IllegalConnectionUriException(uri, e.getCause());
                     } catch (JMSException e) {
                         if (LOGGER.isWarnEnabled()) {
                             LOGGER.warn("Create activemq connection fail, uri: {}, retry", uri, e);
@@ -173,12 +205,9 @@ public class ConnectionFactoryCache {
                     }
                 });
             } catch (ExecutionException e) {
-                // handle RuntimeException for IllegalConnectionUriException
-                RuntimeException cause = (RuntimeException) e.getCause();
-                if (LOGGER.isErrorEnabled()) {
-                    LOGGER.error("Create activemq connection fail, uri: {}", uri, cause);
-                }
-                throw cause;
+                // won't goto this branch
+                assert false;
+                return null;
             } catch (RetryException e) {
                 Attempt<?> attempt = e.getLastFailedAttempt();
                 if (LOGGER.isErrorEnabled()) {
@@ -188,40 +217,6 @@ public class ConnectionFactoryCache {
                 throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
         }
-        return activeMQCache.get(inner);
-    }
-
-    private static class MQConfigInner {
-        private final MQType type;
-        private final String uri;
-        private final String username;
-        private final String password;
-
-        MQConfigInner(MQConfig config) {
-            this.type = config.getType();
-            this.uri = config.getUri();
-            this.username = config.getUsername();
-            this.password = config.getPassword();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            MQConfigInner inner = (MQConfigInner) o;
-            return type == inner.type &&
-                    uri.equals(inner.uri) &&
-                    username.equals(inner.username) &&
-                    password.equals(inner.password);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(type, uri, username, password);
-        }
+        return activeMQCache.get(name);
     }
 }

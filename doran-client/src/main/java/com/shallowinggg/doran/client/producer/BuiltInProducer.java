@@ -1,6 +1,6 @@
 package com.shallowinggg.doran.client.producer;
 
-import com.shallowinggg.doran.client.Message;
+import com.shallowinggg.doran.client.common.Message;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.jetbrains.annotations.NotNull;

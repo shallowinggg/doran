@@ -1,8 +1,9 @@
 package com.shallowinggg.doran.client.producer;
 
 import com.rabbitmq.client.*;
-import com.shallowinggg.doran.client.Message;
-import com.shallowinggg.doran.client.RetryCountExhaustedException;
+import com.shallowinggg.doran.client.common.Message;
+import com.shallowinggg.doran.client.common.RetryCountExhaustedException;
+import com.shallowinggg.doran.client.common.ConnectionFactoryCache;
 import com.shallowinggg.doran.common.RabbitMQConfig;
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.common.util.retry.*;
@@ -112,6 +113,10 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
         this.exchangeName = config.getExchangeName();
         this.routingKey = config.getRoutingKey();
         this.channel = channel;
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("RabbitMQ producer build success, exchange: {}, routing key: {}", exchangeName,
+                    routingKey);
+        }
     }
 
     @Override
@@ -243,6 +248,12 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
     }
 
     private static class ResendCache {
+        /**
+         * Use sorted map to store unconfirmed messages.
+         * Whatever single or multiple ack, skip list can
+         * guarantee good performance.
+         * TODO: implement a normal skip list for single thread env.
+         */
         private final SortedMap<Long, ResendMessage> unconfirmedMap = new ConcurrentSkipListMap<>();
 
         void put(Long uniqueId, Message message) {

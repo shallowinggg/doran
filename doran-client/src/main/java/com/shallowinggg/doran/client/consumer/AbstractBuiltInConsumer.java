@@ -12,6 +12,7 @@ import java.util.Set;
  * @author shallowinggg
  */
 public abstract class AbstractBuiltInConsumer implements BuiltInConsumer {
+    // TODO: 一个consumer持有一个线程池，多个线程
     private EventExecutor executor;
     private final Set<MessageListener> listeners;
 

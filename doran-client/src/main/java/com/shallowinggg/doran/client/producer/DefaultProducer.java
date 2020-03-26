@@ -1,8 +1,8 @@
 package com.shallowinggg.doran.client.producer;
 
 import com.codahale.metrics.Counter;
-import com.shallowinggg.doran.client.Message;
-import com.shallowinggg.doran.client.MqConfigBean;
+import com.shallowinggg.doran.client.common.Message;
+import com.shallowinggg.doran.client.common.MqConfigBean;
 import com.shallowinggg.doran.client.chooser.BuiltInProducerChooserFactory;
 import com.shallowinggg.doran.client.chooser.ObjectChooser;
 import com.shallowinggg.doran.common.MQConfig;
@@ -109,6 +109,9 @@ public class DefaultProducer implements MqConfigBean {
     @Override
     public void setMqConfig(@NotNull MQConfig newConfig) {
         Assert.notNull(newConfig, "'newConfig' must not be null");
+        if(state == REBUILDING) {
+            return;
+        }
         this.state = REBUILDING;
         final MQConfig oldConfig = this.config;
         final int num = newConfig.getThreadNum();
