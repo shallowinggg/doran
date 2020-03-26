@@ -19,6 +19,9 @@ public class ActiveMQConfig extends MQConfig {
     private final String destinationType;
 
     @Nullable
+    private final String clientId;
+
+    @Nullable
     private final String selector;
 
     public ActiveMQConfig(String name, MQType type, String uri, String username, String password, int threadNum,
@@ -29,27 +32,33 @@ public class ActiveMQConfig extends MQConfig {
         JsonNode extFields = mapper.readTree(json);
         String destinationName = extFields.get("destinationName").asText();
         String destinationType = extFields.get("destinationType").asText();
+        String clientId = extFields.get("clientId").asText();
         String selector = extFields.get("selector").asText();
         this.destinationName = destinationName;
         this.destinationType = destinationType;
+        this.clientId = clientId;
         this.selector = selector;
     }
 
     public ActiveMQConfig(String name, MQType type, String uri, String username, String password, long timestamp,
-                          String destinationName, String destinationType, @Nullable String selector) {
+                          String destinationName, String destinationType,
+                          @Nullable String clientId, @Nullable String selector) {
         super(name, type, uri, username, password, timestamp);
 
         this.destinationName = destinationName;
         this.destinationType = destinationType;
+        this.clientId = clientId;
         this.selector = selector;
     }
 
     public ActiveMQConfig(String name, MQType type, String uri, String username, String password, int threadNum,
-                             long timestamp, String destinationName, String destinationType, @Nullable String selector) {
+                             long timestamp, String destinationName, String destinationType,
+                          @Nullable String clientId, @Nullable String selector) {
         super(name, type, uri, username, password, threadNum, timestamp);
 
         this.destinationName = destinationName;
         this.destinationType = destinationType;
+        this.clientId = clientId;
         this.selector = selector;
     }
 
@@ -58,6 +67,7 @@ public class ActiveMQConfig extends MQConfig {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("destinationName", getDestinationName());
         node.put("destinationType", getDestinationType());
+        node.put("clientId", getClientId());
         node.put("selector", getSelector());
         return node.toString();
     }
@@ -74,5 +84,10 @@ public class ActiveMQConfig extends MQConfig {
     @Nullable
     public String getSelector() {
         return selector;
+    }
+
+    @Nullable
+    public String getClientId() {
+        return clientId;
     }
 }
