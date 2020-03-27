@@ -6,7 +6,8 @@ import com.shallowinggg.doran.common.*;
 /**
  * @author shallowinggg
  */
-public abstract class PojoHeaderConverter {
+public final class PojoHeaderConverter {
+    private PojoHeaderConverter() {}
 
     public static <T extends MQConfig> void mqConfig2ResponseHeader(T config,
                                                                     RequestMQConfigResponseHeader header) {
