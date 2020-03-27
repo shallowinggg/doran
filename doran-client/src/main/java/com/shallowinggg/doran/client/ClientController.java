@@ -2,7 +2,6 @@ package com.shallowinggg.doran.client;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
-import com.shallowinggg.doran.client.producer.DefaultProducer;
 import com.shallowinggg.doran.common.MQConfig;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
 import com.shallowinggg.doran.common.util.Assert;

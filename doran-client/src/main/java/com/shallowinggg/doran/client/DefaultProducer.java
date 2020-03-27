@@ -1,10 +1,14 @@
-package com.shallowinggg.doran.client.producer;
+package com.shallowinggg.doran.client;
 
 import com.codahale.metrics.Counter;
 import com.shallowinggg.doran.client.common.Message;
 import com.shallowinggg.doran.client.common.MqConfigBean;
 import com.shallowinggg.doran.client.chooser.BuiltInProducerChooserFactory;
 import com.shallowinggg.doran.client.chooser.ObjectChooser;
+import com.shallowinggg.doran.client.producer.ActiveMQProducer;
+import com.shallowinggg.doran.client.producer.BuiltInProducer;
+import com.shallowinggg.doran.client.producer.RabbitMQProducer;
+import com.shallowinggg.doran.common.ActiveMQConfig;
 import com.shallowinggg.doran.common.MQConfig;
 import com.shallowinggg.doran.common.RabbitMQConfig;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
@@ -184,9 +188,11 @@ public class DefaultProducer implements MqConfigBean {
                 RabbitMQConfig rabbitMQConfig = (RabbitMQConfig) config;
                 return new RabbitMQProducer(rabbitMQConfig);
             case ActiveMQ:
+                ActiveMQConfig activeMQConfig = (ActiveMQConfig) config;
+                return new ActiveMQProducer(activeMQConfig);
             case UNKNOWN:
             default:
-                throw new IllegalArgumentException("");
+                throw new IllegalArgumentException("Invalid config " + config);
         }
     }
 
