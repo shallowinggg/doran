@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jms.*;
+import java.lang.IllegalStateException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -23,6 +24,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ActiveMQConsumer extends AbstractBuiltInConsumer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ActiveMQConsumer.class);
+    private final ActiveMQConfig config;
     private final Session session;
     private MessageConsumer consumer;
     private final Charset UTF_8 = StandardCharsets.UTF_8;
@@ -30,6 +32,7 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
     public ActiveMQConsumer(final ActiveMQConfig config, Set<MessageListener> listeners) {
         super(listeners);
         Assert.notNull(config, "'config' must not be null");
+        this.config = config;
         Connection connection;
         String clientId = config.getClientId();
         if (clientId != null) {
@@ -80,7 +83,7 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
                                     }
                                 } catch (JMSException e) {
                                     if (LOGGER.isErrorEnabled()) {
-                                        LOGGER.error(e.getMessage());
+                                        LOGGER.error("Get message text fail, content: {}", textMessage, e);
                                     }
                                 }
                             }
@@ -115,11 +118,67 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
 
     @Override
     public Message receive() {
-        return null;
+        if (CollectionUtils.isNotEmpty(getMessageListeners())) {
+            throw new IllegalStateException("ActiveMQ consumer is configured as async mode, config: " + config);
+        }
+        try {
+            javax.jms.Message msg = consumer.receiveNoWait();
+            return convertMessage(msg);
+        } catch (JMSException e) {
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Receive message fail", e);
+            }
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public Message receive(long timeout, TimeUnit unit) throws InterruptedException {
+        if (CollectionUtils.isNotEmpty(getMessageListeners())) {
+            throw new IllegalStateException("ActiveMQ consumer is configured as async mode, config: " + config);
+        }
+        try {
+            javax.jms.Message msg = consumer.receive(unit.toMillis(timeout));
+            return convertMessage(msg);
+        } catch (JMSException e) {
+            if (e.getCause() instanceof InterruptedException) {
+                throw (InterruptedException) e.getCause();
+            }
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Receive message fail", e);
+            }
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Message convertMessage(javax.jms.Message msg) {
+        if (msg instanceof TextMessage) {
+            TextMessage textMessage = (TextMessage) msg;
+            try {
+                String text = textMessage.getText();
+                return Message.decode(text.getBytes(UTF_8));
+            } catch (JMSException e) {
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Get message text fail, content: {}", textMessage, e);
+                }
+                throw new RuntimeException(e);
+            }
+        }
         return null;
+    }
+
+    public void close() {
+        try {
+            consumer.close();
+            session.close();
+        } catch (JMSException e) {
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Close activemq consumer fail");
+            }
+            return;
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Close activemq consumer success");
+        }
     }
 }
