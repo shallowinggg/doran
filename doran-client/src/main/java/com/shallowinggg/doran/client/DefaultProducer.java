@@ -1,10 +1,10 @@
 package com.shallowinggg.doran.client;
 
-import com.codahale.metrics.Counter;
-import com.shallowinggg.doran.client.common.Message;
-import com.shallowinggg.doran.client.common.MqConfigBean;
+import com.codahale.metrics.Meter;
 import com.shallowinggg.doran.client.chooser.BuiltInProducerChooserFactory;
 import com.shallowinggg.doran.client.chooser.ObjectChooser;
+import com.shallowinggg.doran.client.common.Message;
+import com.shallowinggg.doran.client.common.MqConfigBean;
 import com.shallowinggg.doran.client.producer.ActiveMQProducer;
 import com.shallowinggg.doran.client.producer.BuiltInProducer;
 import com.shallowinggg.doran.client.producer.RabbitMQProducer;
@@ -34,7 +34,7 @@ public class DefaultProducer implements MqConfigBean {
     private static final int SHUTDOWN = 4;
 
     private volatile MQConfig config;
-    private final Counter counter;
+    private final Meter meter;
     private BuiltInProducer[] producers;
     private ObjectChooser<BuiltInProducer> producerChooser;
     private EventExecutorGroup sendExecutor;
@@ -53,8 +53,10 @@ public class DefaultProducer implements MqConfigBean {
         return c == REBUILDING;
     }
 
-    public DefaultProducer(String configName, Counter counter) {
-        this.counter = counter;
+    public DefaultProducer(String configName, Meter meter) {
+        Assert.hasText(configName);
+        Assert.notNull(meter, "'meter' must not be null");
+        this.meter = meter;
         this.reInputExecutor = new ReInputEventExecutorGroup(1,
                 new ThreadFactoryImpl(configName + "ProducerReInputExecutor_"));
         this.state = STARTING;
@@ -82,7 +84,7 @@ public class DefaultProducer implements MqConfigBean {
             BuiltInProducer producer = producerChooser.next();
             producer.executor().submit(() -> producer.sendMessage(msg));
         }
-        counter.inc();
+        meter.mark();
     }
 
     public void sendMessage(Message msg, long delay, TimeUnit unit) {
@@ -107,7 +109,7 @@ public class DefaultProducer implements MqConfigBean {
             BuiltInProducer producer = producerChooser.next();
             producer.executor().submit(() -> producer.sendMessage(msg));
         }
-        counter.inc();
+        meter.mark();
     }
 
     @Override
@@ -180,6 +182,11 @@ public class DefaultProducer implements MqConfigBean {
         this.state = SHUTDOWN;
         this.reInputExecutor.shutdownGracefully();
         this.sendExecutor.shutdownGracefully();
+    }
+
+    @NotNull
+    public Meter getMeter() {
+        return this.meter;
     }
 
     private BuiltInProducer createProducer(final MQConfig config) {
