@@ -84,4 +84,10 @@ public abstract class Assert {
             throw new IllegalArgumentException("[Assertion failed] - this String argument must have text; it must not be null, empty, or blank");
         }
     }
+
+    public static void hasText(CharSequence c, String message) {
+        if (!StringUtils.hasText(c)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
 }

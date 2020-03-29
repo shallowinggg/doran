@@ -5,6 +5,8 @@ import com.shallowinggg.doran.client.chooser.BuiltInProducerChooserFactory;
 import com.shallowinggg.doran.client.chooser.ObjectChooser;
 import com.shallowinggg.doran.client.common.Message;
 import com.shallowinggg.doran.client.common.MqConfigBean;
+import com.shallowinggg.doran.client.common.NameGenerator;
+import com.shallowinggg.doran.client.common.NameGeneratorFactory;
 import com.shallowinggg.doran.client.producer.ActiveMQProducer;
 import com.shallowinggg.doran.client.producer.BuiltInProducer;
 import com.shallowinggg.doran.client.producer.RabbitMQProducer;
@@ -19,6 +21,8 @@ import com.shallowinggg.doran.common.util.concurrent.ReInputEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -27,18 +31,22 @@ import java.util.concurrent.TimeUnit;
  * @author shallowinggg
  */
 public class DefaultProducer implements MqConfigBean {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultProducer.class);
     private static final int NEW = 0;
     private static final int STARTING = 1;
     private static final int RUNNING = 2;
     private static final int REBUILDING = 3;
     private static final int SHUTDOWN = 4;
 
-    private volatile MQConfig config;
     private final Meter meter;
+    private final String name;
+    private final ReInputEventExecutorGroup reInputExecutor;
+
+    private volatile MQConfig config;
     private BuiltInProducer[] producers;
     private ObjectChooser<BuiltInProducer> producerChooser;
     private EventExecutorGroup sendExecutor;
-    private final ReInputEventExecutorGroup reInputExecutor;
+    private NameGenerator nameGenerator;
     private volatile int state;
 
     private static boolean runStateLessThan(int c, int s) {
@@ -53,9 +61,11 @@ public class DefaultProducer implements MqConfigBean {
         return c == REBUILDING;
     }
 
-    public DefaultProducer(String configName, Meter meter) {
+    public DefaultProducer(String name, String configName, Meter meter) {
+        Assert.hasText(name);
         Assert.hasText(configName);
         Assert.notNull(meter, "'meter' must not be null");
+        this.name = name;
         this.meter = meter;
         this.reInputExecutor = new ReInputEventExecutorGroup(1,
                 new ThreadFactoryImpl(configName + "ProducerReInputExecutor_"));
@@ -170,7 +180,16 @@ public class DefaultProducer implements MqConfigBean {
         this.producerChooser = producerChooser;
         this.reInputExecutor.setTransferGroup(sendExecutor);
         this.config = newConfig;
+        this.nameGenerator = NameGeneratorFactory.getInstance().producerNameGenerator(newConfig);
         this.state = RUNNING;
+
+        if(LOGGER.isInfoEnabled()) {
+            if(oldConfig == null) {
+                LOGGER.info("Build producer {} success, config {}", name, newConfig);
+            } else {
+                LOGGER.info("Rebuild producer {} success, old: {}, new: {}", name, oldConfig, newConfig);
+            }
+        }
     }
 
     @Override
@@ -190,13 +209,16 @@ public class DefaultProducer implements MqConfigBean {
     }
 
     private BuiltInProducer createProducer(final MQConfig config) {
+        String name;
         switch (config.getType()) {
             case RabbitMQ:
                 RabbitMQConfig rabbitMQConfig = (RabbitMQConfig) config;
-                return new RabbitMQProducer(rabbitMQConfig);
+                name = nameGenerator.generateName();
+                return new RabbitMQProducer(name, rabbitMQConfig);
             case ActiveMQ:
                 ActiveMQConfig activeMQConfig = (ActiveMQConfig) config;
-                return new ActiveMQProducer(activeMQConfig);
+                name = nameGenerator.generateName();
+                return new ActiveMQProducer(name, activeMQConfig);
             case UNKNOWN:
             default:
                 throw new IllegalArgumentException("Invalid config " + config);

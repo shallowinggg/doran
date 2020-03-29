@@ -100,7 +100,7 @@ public class ClientController {
         Assert.hasText(configName);
         synchronized (configName.intern()) {
             final Meter meter = producerMetricRegistry.meter(configName);
-            final DefaultProducer producer = new DefaultProducer(configName, meter);
+            final DefaultProducer producer = new DefaultProducer("", configName, meter);
             if (async) {
                 asyncExecutor.submit(() -> {
                     MQConfig config = getMqConfig(configName);

@@ -46,8 +46,9 @@ public class ClientManager {
             if (producers.containsKey(configName)) {
                 return producers.get(configName);
             }
-            final Meter meter = producerMetricRegistry.meter(configName + PRODUCER_METER_SUFFIX);
-            final DefaultProducer producer = new DefaultProducer(configName, meter);
+            String name = configName + PRODUCER_METER_SUFFIX;
+            final Meter meter = producerMetricRegistry.meter(name);
+            final DefaultProducer producer = new DefaultProducer(name, configName, meter);
             final MQConfig config = getConfig(configName, timeoutMillis);
             producer.setMqConfig(config);
             producers.putIfAbsent(configName, producer);
@@ -64,7 +65,7 @@ public class ClientManager {
             if (consumers.containsKey(configName)) {
                 return consumers.get(configName);
             }
-            final Meter meter = producerMetricRegistry.meter(configName + CONSUMER_METER_SUFFIX);
+            final Meter meter = consumerMetricRegistry.meter(configName + CONSUMER_METER_SUFFIX);
             final DefaultConsumer consumer = new DefaultConsumer(configName, meter);
             final MQConfig config = getConfig(configName, timeoutMillis);
             consumer.setMqConfig(config);

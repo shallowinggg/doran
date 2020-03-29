@@ -20,10 +20,14 @@ import java.util.concurrent.TimeUnit;
  * that represents message is sent success, this message
  * can be removed from unconfirmed collection.
  * If the message is not ack by remote brokers too long,
- * default this time is {@link #WAIT_ACK_MILLS}, it should
+ * default this time is {@link #WAIT_ACK_MILLIS}, it should
  * be resent. You can specify this time by system property
- * "com.shallowinggg.producer.waitAckMills". This may lead
- * to more memory cost, but it's worth it.
+ * "com.shallowinggg.producer.messageWaitAckMillis". This
+ * may lead to more memory cost, but worth it.
+ * If message can't be sent too long, it will be removed
+ * from resend cache and only be logged. Default invalid
+ * is {@link #WAIT_ACK_MILLIS} * 3, see
+ * {@link #INVALID_MILLIS} for more information.
  * <p>
  * Every {@link BuiltInProducer} instance should be bound to
  * an {@link EventExecutor}, and an {@link EventExecutor}
@@ -36,7 +40,8 @@ import java.util.concurrent.TimeUnit;
  * @see ActiveMQProducer
  */
 public interface BuiltInProducer {
-    long WAIT_ACK_MILLS = SystemPropertyUtil.getInt("com.shallowinggg.producer.waitAckMills", 5000);
+    long WAIT_ACK_MILLIS = SystemPropertyUtil.getLong("com.shallowinggg.producer.messageWaitAckMillis", 5000);
+    long INVALID_MILLIS = SystemPropertyUtil.getLong("com.shallowinggg.producer.messageInvalidMillis", WAIT_ACK_MILLIS * 3);
 
     /**
      * Send normal message.
@@ -47,7 +52,7 @@ public interface BuiltInProducer {
      * If MQ Broker send a nack that represent maybe not receive
      * this message, it will be resent in the future again. Default
      * resend time is 3000ms. You can set this value by
-     * {@link #WAIT_ACK_MILLS}.
+     * {@link #WAIT_ACK_MILLIS}.
      *
      * @param message the message to send
      */
@@ -63,7 +68,7 @@ public interface BuiltInProducer {
      * this message, it will be resent in the future again, and
      * its delay will be calculated with current time. Default
      * resend time is 3000ms. You can set this value by
-     * {@link #WAIT_ACK_MILLS}.
+     * {@link #WAIT_ACK_MILLIS}.
      *
      * @param message the message to send
      * @param delay   the delay of message
