@@ -1,10 +1,9 @@
 package com.shallowinggg.doran.client.consumer;
 
 import com.shallowinggg.doran.client.common.Message;
-import io.netty.util.concurrent.EventExecutor;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Set;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -17,7 +16,5 @@ public interface BuiltInConsumer {
 
     Set<MessageListener> getMessageListeners();
 
-    void register(@NotNull EventExecutor executor);
-
-    EventExecutor executor();
+    ThreadPoolExecutor executor();
 }

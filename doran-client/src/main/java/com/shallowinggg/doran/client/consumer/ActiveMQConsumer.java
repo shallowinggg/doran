@@ -17,6 +17,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,15 +25,18 @@ import java.util.concurrent.TimeUnit;
  */
 public class ActiveMQConsumer extends AbstractBuiltInConsumer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ActiveMQConsumer.class);
-    private final ActiveMQConfig config;
+    private final String name;
     private final Session session;
     private MessageConsumer consumer;
     private final Charset UTF_8 = StandardCharsets.UTF_8;
 
-    public ActiveMQConsumer(final ActiveMQConfig config, Set<MessageListener> listeners) {
-        super(listeners);
+    public ActiveMQConsumer(String name, final ActiveMQConfig config,
+                            ThreadPoolExecutor executor, Set<MessageListener> listeners) {
+        super(executor, listeners);
+        Assert.hasText(name, "'name' must has text");
         Assert.notNull(config, "'config' must not be null");
-        this.config = config;
+        this.name = name;
+
         Connection connection;
         String clientId = config.getClientId();
         if (clientId != null) {
@@ -46,12 +50,12 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
                 .withStopStrategy(StopStrategies.stopAfterAttempt(3))
                 .withWaitStrategy(WaitStrategies.fibonacciWait())
                 .build();
-        final String name = config.getName();
         Session session;
         try {
             session = retryer.call(() -> {
+                Session innerSession = null;
                 try {
-                    Session innerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                    innerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                     MessageConsumer consumer;
                     switch (config.getDestinationType()) {
                         case PTP:
@@ -72,14 +76,20 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
                     }
 
                     if (CollectionUtils.isNotEmpty(getMessageListeners())) {
-                        consumer.setMessageListener(msg -> {
+                        consumer.setMessageListener(msg -> executor().execute(() -> {
                             if (msg instanceof TextMessage) {
                                 TextMessage textMessage = (TextMessage) msg;
                                 try {
                                     String text = textMessage.getText();
                                     Message message = Message.decode(text.getBytes(UTF_8));
                                     for (MessageListener listener : getMessageListeners()) {
-                                        listener.onMessage(message);
+                                        if(listener.accept(message)) {
+                                            listener.onMessage(message);
+                                        }
+                                    }
+                                    if (LOGGER.isDebugEnabled()) {
+                                        LOGGER.debug("ActiveMQ consumer {} consume message {} success",
+                                                name, message);
                                     }
                                 } catch (JMSException e) {
                                     if (LOGGER.isErrorEnabled()) {
@@ -87,14 +97,15 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
                                     }
                                 }
                             }
-                        });
+                        }));
                     }
                     this.consumer = consumer;
                     return innerSession;
                 } catch (JMSException e) {
-                    if (LOGGER.isWarnEnabled()) {
-                        LOGGER.warn("Create activemq consumer for config {} fail, retry", name, e);
+                    if (innerSession != null) {
+                        innerSession.close();
                     }
+                    // retry
                     throw e;
                 }
             });
@@ -102,13 +113,13 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
             // handle RuntimeException
             RuntimeException cause = (RuntimeException) e.getCause();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Create activemq consumer fail", cause);
+                LOGGER.error("Create activemq consumer {} fail", name, cause);
             }
             throw cause;
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Create activemq consumer for config {} fail, retry count {} has exhausted",
+                LOGGER.error("Create activemq session for consumer {} fail, retry count {} has exhausted",
                         name, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
@@ -119,14 +130,14 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
     @Override
     public Message receive() {
         if (CollectionUtils.isNotEmpty(getMessageListeners())) {
-            throw new IllegalStateException("ActiveMQ consumer is configured as async mode, config: " + config);
+            throw new IllegalStateException("ActiveMQ consumer " + name + " is configured as async mode");
         }
         try {
             javax.jms.Message msg = consumer.receiveNoWait();
             return convertMessage(msg);
         } catch (JMSException e) {
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Receive message fail", e);
+                LOGGER.error("ActiveMQ consumer {} receive message fail", name, e);
             }
             throw new RuntimeException(e);
         }
@@ -135,7 +146,7 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
     @Override
     public Message receive(long timeout, TimeUnit unit) throws InterruptedException {
         if (CollectionUtils.isNotEmpty(getMessageListeners())) {
-            throw new IllegalStateException("ActiveMQ consumer is configured as async mode, config: " + config);
+            throw new IllegalStateException("ActiveMQ consumer " + name + " is configured as async mode");
         }
         try {
             javax.jms.Message msg = consumer.receive(unit.toMillis(timeout));
@@ -145,7 +156,7 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
                 throw (InterruptedException) e.getCause();
             }
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Receive message fail", e);
+                LOGGER.error("ActiveMQ consumer {} receive message fail", name, e);
             }
             throw new RuntimeException(e);
         }
@@ -173,12 +184,12 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
             session.close();
         } catch (JMSException e) {
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Close activemq consumer fail");
+                LOGGER.error("Close activemq consumer and related session {} fail", name);
             }
             return;
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Close activemq consumer success");
+            LOGGER.debug("Close activemq consumer {} success", name);
         }
     }
 }

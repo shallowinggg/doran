@@ -1,43 +1,38 @@
 package com.shallowinggg.doran.client.consumer;
 
-import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.common.util.CollectionUtils;
-import io.netty.util.concurrent.EventExecutor;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author shallowinggg
  */
 public abstract class AbstractBuiltInConsumer implements BuiltInConsumer {
-    // TODO: 一个consumer持有一个线程池，多个线程
-    private EventExecutor executor;
+    @Nullable
+    private final ThreadPoolExecutor executor;
+
+    @Nullable
     private final Set<MessageListener> listeners;
 
-    protected AbstractBuiltInConsumer() {
-        this.listeners = Collections.emptySet();
-    }
-
-    protected AbstractBuiltInConsumer(Set<MessageListener> listeners) {
-        Assert.isTrue(CollectionUtils.isNotEmpty(listeners), "'listeners' must not be empty");
+    protected AbstractBuiltInConsumer(@Nullable ThreadPoolExecutor executor,
+                                      @Nullable Set<MessageListener> listeners) {
+        this.executor = executor;
         this.listeners = listeners;
     }
 
     @Override
-    public void register(@NotNull EventExecutor executor) {
-        Assert.notNull(executor, "'executor' must not be null");
-        this.executor = executor;
-    }
-
-    @Override
-    public EventExecutor executor() {
+    public ThreadPoolExecutor executor() {
         return executor;
     }
 
     @Override
     public Set<MessageListener> getMessageListeners() {
-        return Collections.unmodifiableSet(this.listeners);
+        if(CollectionUtils.isNotEmpty(listeners)) {
+            return Collections.unmodifiableSet(this.listeners);
+        }
+        return Collections.emptySet();
     }
 }
