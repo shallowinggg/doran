@@ -296,19 +296,19 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
          */
         private final SortedMap<Long, ResendMessage> unconfirmedMap = new ConcurrentSkipListMap<>();
 
-        public void put(Long uniqueId, TextMessage message) {
+        void put(Long uniqueId, TextMessage message) {
             unconfirmedMap.put(uniqueId, ResendMessage.create(message));
         }
 
-        public void put(Long uniqueId, TextMessage message, long delay) {
+        void put(Long uniqueId, TextMessage message, long delay) {
             unconfirmedMap.put(uniqueId, ResendMessage.create(message, delay));
         }
 
-        public void delete(long uniqueId) {
+        void delete(long uniqueId) {
             unconfirmedMap.remove(uniqueId);
         }
 
-        public Set<Map.Entry<Long, ResendMessage>> entrySet() {
+        Set<Map.Entry<Long, ResendMessage>> entrySet() {
             return unconfirmedMap.entrySet();
         }
     }

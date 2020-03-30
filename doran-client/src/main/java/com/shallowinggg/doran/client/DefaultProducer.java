@@ -62,8 +62,8 @@ public class DefaultProducer implements MqConfigBean {
     }
 
     public DefaultProducer(String name, String configName, Meter meter) {
-        Assert.hasText(name);
-        Assert.hasText(configName);
+        Assert.hasText(name, "'name' must has text");
+        Assert.hasText(configName, "'configName' must has text");
         Assert.notNull(meter, "'meter' must not be null");
         this.name = name;
         this.meter = meter;
@@ -75,10 +75,10 @@ public class DefaultProducer implements MqConfigBean {
     public void sendMessage(Message msg) {
         final int state = this.state;
         if (state == SHUTDOWN) {
-            throw new IllegalStateException("Producer has been closed");
+            throw new IllegalStateException("Producer " + name + " has closed");
         }
         if (!isRunning(state)) {
-            throw new IllegalStateException("Producer has not initialized");
+            throw new IllegalStateException("Producer " + name + " has not initialized");
         }
         if (isRebuilding(state)) {
             reInputExecutor.submit(() -> {
@@ -100,10 +100,10 @@ public class DefaultProducer implements MqConfigBean {
     public void sendMessage(Message msg, long delay, TimeUnit unit) {
         final int state = this.state;
         if (state == SHUTDOWN) {
-            throw new IllegalStateException("Producer has been closed");
+            throw new IllegalStateException("Producer " + name + " has closed");
         }
         if (!isRunning(state)) {
-            throw new IllegalStateException("Producer has not initialized");
+            throw new IllegalStateException("Producer " + name + " has not initialized");
         }
         if (isRebuilding(state)) {
             reInputExecutor.submit(() -> {
@@ -132,7 +132,9 @@ public class DefaultProducer implements MqConfigBean {
         final MQConfig oldConfig = this.config;
         final int num = newConfig.getThreadNum();
         final String configName = newConfig.getName();
+        BuiltInProducer[] deprecateProducers = null;
 
+        // build new resources
         EventExecutorGroup sendExecutor = new DoranEventExecutorGroup(num,
                 new ThreadFactoryImpl(configName + "ProducerExecutor_"));
         BuiltInProducer[] newProducers = new BuiltInProducer[num];
@@ -147,6 +149,10 @@ public class DefaultProducer implements MqConfigBean {
                 }
             } else {
                 System.arraycopy(this.producers, 0, newProducers, 0, num);
+
+                int deprecateNum = oldNum - num;
+                deprecateProducers = new BuiltInProducer[deprecateNum];
+                System.arraycopy(this.producers, num, deprecateProducers, 0, deprecateNum);
             }
 
             for (int i = 0; i < num; ++i) {
@@ -160,6 +166,7 @@ public class DefaultProducer implements MqConfigBean {
                 producer.startResendTask();
                 newProducers[i] = producer;
             }
+            deprecateProducers = this.producers;
         }
         producerChooser = BuiltInProducerChooserFactory.INSTANCE.newChooser(newProducers);
 
@@ -173,6 +180,11 @@ public class DefaultProducer implements MqConfigBean {
                 }
             }
             this.sendExecutor.shutdownGracefully();
+        }
+        if(deprecateProducers != null) {
+            for(BuiltInProducer producer : deprecateProducers) {
+                producer.close();
+            }
         }
 
         this.sendExecutor = sendExecutor;
@@ -201,6 +213,11 @@ public class DefaultProducer implements MqConfigBean {
         this.state = SHUTDOWN;
         this.reInputExecutor.shutdownGracefully();
         this.sendExecutor.shutdownGracefully();
+        if(producers != null) {
+            for (BuiltInProducer producer : producers) {
+                producer.close();
+            }
+        }
     }
 
     @NotNull

@@ -69,7 +69,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
                         @Override
                         public void handleAck(long deliveryTag, boolean multiple) {
                             if (!multiple) {
-                                // TODO: think about using executor() handle it
+                                // TODO: use executor() to handle it when thread unsafe skip list can use
                                 resendCache.delete(deliveryTag);
                                 if (LOGGER.isDebugEnabled()) {
                                     LOGGER.debug("Message {} send success", deliveryTag);
@@ -146,25 +146,8 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
     }
 
     private void sendMessageInner(Message message) {
-        byte[] msg = message.encode();
-        long id = channel.getNextPublishSeqNo();
-        resendCache.put(id, message);
-        try {
-            messageRetryer.call(() -> {
-                // IOException will be handled in RetryException catch block
-                channel.basicPublish(exchangeName, routingKey, MessageProperties.PERSISTENT_TEXT_PLAIN, msg);
-                return null;
-            });
-        } catch (ExecutionException e) {
-            // won't goto this branch
-            assert false;
-        } catch (RetryException e) {
-            Attempt<?> attempt = e.getLastFailedAttempt();
-            if (LOGGER.isWarnEnabled()) {
-                LOGGER.warn("Producer {} send message fail, content: {}, retry count {} has exhausted, retry in the future",
-                        name, message, attempt.getAttemptNumber(), attempt.getExceptionCause());
-            }
-        }
+        byte[] content = message.encode();
+        doSendMessage(message, content, 0);
     }
 
     @Override
@@ -181,20 +164,29 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
     }
 
     private void sendMessageInner(Message message, long delay, TimeUnit unit) {
-        long delayMills = TimeUnit.MILLISECONDS.convert(delay, unit);
-        AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
-                .contentType("text/plain")
-                .deliveryMode(2)
-                .expiration(String.valueOf(delayMills))
-                .build();
-        byte[] msg = message.encode();
+        long delayMillis = TimeUnit.MILLISECONDS.convert(delay, unit);
+        byte[] content = message.encode();
+        doSendMessage(message, content, delayMillis);
+    }
+
+    private void doSendMessage(Message msg, byte[] content, long delay) {
+        AMQP.BasicProperties properties;
+        if (delay == 0) {
+            properties = MessageProperties.PERSISTENT_TEXT_PLAIN;
+        } else {
+            properties = new AMQP.BasicProperties.Builder()
+                    .contentType("text/plain")
+                    .deliveryMode(2)
+                    .expiration(String.valueOf(delay))
+                    .build();
+        }
 
         long id = channel.getNextPublishSeqNo();
-        resendCache.put(id, message, delayMills);
+        resendCache.put(id, msg, content, delay);
         try {
             messageRetryer.call(() -> {
                 // IOException will be handled in RetryException catch block
-                channel.basicPublish(exchangeName, routingKey, properties, msg);
+                channel.basicPublish(exchangeName, routingKey, properties, content);
                 return null;
             });
         } catch (ExecutionException e) {
@@ -204,7 +196,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isWarnEnabled()) {
                 LOGGER.warn("Producer {} send message fail, content: {}, retry count {} has exhausted, retry in the future",
-                        name, message, attempt.getAttemptNumber(), attempt.getExceptionCause());
+                        name, msg, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
         }
     }
@@ -238,27 +230,71 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
             Map.Entry<Long, ResendMessage> entry = itr.next();
             ResendMessage message = entry.getValue();
 
+            final long id = entry.getKey();
+            final long sendTime = message.sendTime;
+            final long delay = message.delay;
+            final Message msg = message.origin;
+            final byte[] content = message.content;
+
             // valid, resend
-            if (message.sendTime + WAIT_ACK_MILLIS > now) {
-                if (message.delay == 0) {
+            if (sendTime + WAIT_ACK_MILLIS > now) {
+                if (delay == 0) {
                     executor().submit(() -> {
-                        sendMessage(message.content);
-                        resendCache.delete(entry.getKey());
+                        // check again
+                        if (resendCache.needResend(id)) {
+                            doResendMessage(msg, content, delay, sendTime);
+                            resendCache.delete(id);
+                        }
                     });
                 } else {
-                    final long newDelay = Math.max(0, message.sendTime + message.delay - now);
+                    final long newDelay = Math.max(0, sendTime + delay - now);
                     executor().submit(() -> {
-                        sendMessage(message.content, newDelay, TimeUnit.MILLISECONDS);
-                        resendCache.delete(entry.getKey());
+                        // check again
+                        if (resendCache.needResend(id)) {
+                            doResendMessage(msg, content, newDelay, sendTime);
+                            resendCache.delete(id);
+                        }
                     });
                 }
-            } else if (message.sendTime + INVALID_MILLIS > now) {
+            } else if (sendTime + INVALID_MILLIS > now) {
                 // invalid, remove
                 itr.remove();
                 if (LOGGER.isErrorEnabled()) {
                     LOGGER.error("Message {} send fail, remove it from resend cache, invalid millis: {}",
-                            message.content, INVALID_MILLIS);
+                            msg, INVALID_MILLIS);
                 }
+            }
+        }
+    }
+
+    private void doResendMessage(Message msg, byte[] content, long delay, long sendTime) {
+        AMQP.BasicProperties properties;
+        if (delay == 0) {
+            properties = MessageProperties.PERSISTENT_TEXT_PLAIN;
+        } else {
+            properties = new AMQP.BasicProperties.Builder()
+                    .contentType("text/plain")
+                    .deliveryMode(2)
+                    .expiration(String.valueOf(delay))
+                    .build();
+        }
+
+        long id = channel.getNextPublishSeqNo();
+        resendCache.put(id, msg, content, delay, sendTime);
+        try {
+            messageRetryer.call(() -> {
+                // IOException will be handled in RetryException catch block
+                channel.basicPublish(exchangeName, routingKey, properties, content);
+                return null;
+            });
+        } catch (ExecutionException e) {
+            // won't goto this branch
+            assert false;
+        } catch (RetryException e) {
+            Attempt<?> attempt = e.getLastFailedAttempt();
+            if (LOGGER.isWarnEnabled()) {
+                LOGGER.warn("Producer {} resend message fail, content: {}, retry count {} has exhausted, retry in the future",
+                        name, msg, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
         }
     }
@@ -272,12 +308,24 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
          */
         private final SortedMap<Long, ResendMessage> unconfirmedMap = new ConcurrentSkipListMap<>();
 
-        void put(Long uniqueId, Message message) {
-            unconfirmedMap.put(uniqueId, ResendMessage.create(message));
+        /**
+         * Resend task won't be executed immediately, during
+         * this time message may be ack, so it should be
+         * checked again.
+         *
+         * @param uniqueId id for last send
+         * @return {@code true} if message has been ack
+         */
+        boolean needResend(Long uniqueId) {
+            return unconfirmedMap.containsKey(uniqueId);
         }
 
-        void put(Long uniqueId, Message message, long delay) {
-            unconfirmedMap.put(uniqueId, ResendMessage.create(message, delay));
+        void put(Long uniqueId, Message message, byte[] content, long delay) {
+            unconfirmedMap.put(uniqueId, ResendMessage.create(message, content, delay));
+        }
+
+        void put(Long uniqueId, Message message, byte[] content, long delay, long sendTime) {
+            unconfirmedMap.put(uniqueId, ResendMessage.create(message, content, delay, sendTime));
         }
 
         void delete(long uniqueId) {
@@ -297,23 +345,70 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
         }
     }
 
+    /**
+     * Resend structure
+     */
     private static class ResendMessage {
-        private final Message content;
+        /**
+         * Message that need to resend
+         */
+        private final Message origin;
+
+        /**
+         * Maybe increase memory cost, but it can decrease
+         * a lot {@link Message#encode()} operations.
+         */
+        private final byte[] content;
+
+        /**
+         * Delay millis for message, if it not,
+         * this value will be 0.
+         */
         private final long delay;
+
+        /**
+         * Send time at the first time
+         */
         private final long sendTime;
 
-        ResendMessage(final Message content, final long delay) {
+        /**
+         * Build resend structure for message that send fail at the first time.
+         *
+         * @param origin  concrete message
+         * @param content byte representation for message content
+         * @param delay   delay millis for message, if it isn't a delay message, this should be 0
+         */
+        ResendMessage(final Message origin, final byte[] content, final long delay) {
+            this.origin = origin;
             this.content = content;
             this.delay = delay;
             this.sendTime = System.currentTimeMillis();
         }
 
-        static ResendMessage create(final Message content) {
-            return new ResendMessage(content, 0);
+        /**
+         * For resend message what send fail more than once,
+         * send time should be its original send time,
+         * in case it resend forever.
+         *
+         * @param origin   concrete message
+         * @param content  byte representation for message content
+         * @param delay    delay millis for message, if it isn't a delay message, this should be 0
+         * @param sendTime first send time
+         */
+        ResendMessage(final Message origin, final byte[] content, final long delay, final long sendTime) {
+            this.origin = origin;
+            this.content = content;
+            this.delay = delay;
+            this.sendTime = sendTime;
         }
 
-        static ResendMessage create(final Message content, final long delay) {
-            return new ResendMessage(content, delay);
+        static ResendMessage create(final Message origin, final byte[] content, final long delay) {
+            return new ResendMessage(origin, content, delay);
+        }
+
+        static ResendMessage create(final Message origin, final byte[] content, final long delay,
+                                    final long sendTime) {
+            return new ResendMessage(origin, content, delay, sendTime);
         }
     }
 }
