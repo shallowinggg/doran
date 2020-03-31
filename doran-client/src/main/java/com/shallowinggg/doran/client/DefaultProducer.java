@@ -1,6 +1,6 @@
 package com.shallowinggg.doran.client;
 
-import com.codahale.metrics.Meter;
+import com.codahale.metrics.Counter;
 import com.shallowinggg.doran.client.chooser.BuiltInProducerChooserFactory;
 import com.shallowinggg.doran.client.chooser.ObjectChooser;
 import com.shallowinggg.doran.client.common.Message;
@@ -32,13 +32,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class DefaultProducer implements MqConfigBean {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultProducer.class);
-    private static final int NEW = 0;
+
     private static final int STARTING = 1;
     private static final int RUNNING = 2;
     private static final int REBUILDING = 3;
     private static final int SHUTDOWN = 4;
 
-    private final Meter meter;
+    private final Counter counter;
     private final String name;
     private final ReInputEventExecutorGroup reInputExecutor;
 
@@ -61,12 +61,12 @@ public class DefaultProducer implements MqConfigBean {
         return c == REBUILDING;
     }
 
-    public DefaultProducer(String name, String configName, Meter meter) {
+    public DefaultProducer(String name, String configName, Counter counter) {
         Assert.hasText(name, "'name' must has text");
         Assert.hasText(configName, "'configName' must has text");
-        Assert.notNull(meter, "'meter' must not be null");
+        Assert.notNull(counter, "'counter' must not be null");
         this.name = name;
-        this.meter = meter;
+        this.counter = counter;
         this.reInputExecutor = new ReInputEventExecutorGroup(1,
                 new ThreadFactoryImpl(configName + "ProducerReInputExecutor_"));
         this.state = STARTING;
@@ -94,7 +94,7 @@ public class DefaultProducer implements MqConfigBean {
             BuiltInProducer producer = producerChooser.next();
             producer.executor().submit(() -> producer.sendMessage(msg));
         }
-        meter.mark();
+        counter.inc();
     }
 
     public void sendMessage(Message msg, long delay, TimeUnit unit) {
@@ -119,7 +119,7 @@ public class DefaultProducer implements MqConfigBean {
             BuiltInProducer producer = producerChooser.next();
             producer.executor().submit(() -> producer.sendMessage(msg));
         }
-        meter.mark();
+        counter.inc();
     }
 
     @Override
@@ -160,6 +160,7 @@ public class DefaultProducer implements MqConfigBean {
                 newProducers[i].startResendTask();
             }
         } else {
+            this.nameGenerator = NameGeneratorFactory.getInstance().producerNameGenerator(newConfig);
             for (int i = 0; i < num; ++i) {
                 BuiltInProducer producer = createProducer(newConfig);
                 producer.register(sendExecutor.next());
@@ -192,7 +193,6 @@ public class DefaultProducer implements MqConfigBean {
         this.producerChooser = producerChooser;
         this.reInputExecutor.setTransferGroup(sendExecutor);
         this.config = newConfig;
-        this.nameGenerator = NameGeneratorFactory.getInstance().producerNameGenerator(newConfig);
         this.state = RUNNING;
 
         if(LOGGER.isInfoEnabled()) {
@@ -221,8 +221,8 @@ public class DefaultProducer implements MqConfigBean {
     }
 
     @NotNull
-    public Meter getMeter() {
-        return this.meter;
+    public Counter getCounter() {
+        return this.counter;
     }
 
     private BuiltInProducer createProducer(final MQConfig config) {

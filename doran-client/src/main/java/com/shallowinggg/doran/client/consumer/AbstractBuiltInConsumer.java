@@ -4,7 +4,7 @@ import com.shallowinggg.doran.common.util.CollectionUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -15,10 +15,10 @@ public abstract class AbstractBuiltInConsumer implements BuiltInConsumer {
     private final ThreadPoolExecutor executor;
 
     @Nullable
-    private final Set<MessageListener> listeners;
+    private final List<MessageListener> listeners;
 
     protected AbstractBuiltInConsumer(@Nullable ThreadPoolExecutor executor,
-                                      @Nullable Set<MessageListener> listeners) {
+                                      @Nullable List<MessageListener> listeners) {
         this.executor = executor;
         this.listeners = listeners;
     }
@@ -29,10 +29,10 @@ public abstract class AbstractBuiltInConsumer implements BuiltInConsumer {
     }
 
     @Override
-    public Set<MessageListener> getMessageListeners() {
+    public List<MessageListener> getMessageListeners() {
         if(CollectionUtils.isNotEmpty(listeners)) {
-            return Collections.unmodifiableSet(this.listeners);
+            return Collections.unmodifiableList(this.listeners);
         }
-        return Collections.emptySet();
+        return Collections.emptyList();
     }
 }

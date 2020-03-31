@@ -1,7 +1,6 @@
 package com.shallowinggg.doran.client;
 
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.shallowinggg.doran.common.MQConfig;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
@@ -98,21 +97,7 @@ public class ClientController {
 
     public DefaultProducer createProducer(String configName, boolean async) {
         Assert.hasText(configName);
-        synchronized (configName.intern()) {
-            final Meter meter = producerMetricRegistry.meter(configName);
-            final DefaultProducer producer = new DefaultProducer("", configName, meter);
-            if (async) {
-                asyncExecutor.submit(() -> {
-                    MQConfig config = getMqConfig(configName);
-                    producer.setMqConfig(config);
-                });
-            } else {
-                final MQConfig config = getMqConfig(configName);
-                producer.setMqConfig(config);
-            }
-
-            return producer;
-        }
+        return null;
     }
 
     @NotNull

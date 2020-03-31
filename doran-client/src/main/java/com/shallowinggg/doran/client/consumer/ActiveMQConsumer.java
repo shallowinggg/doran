@@ -8,6 +8,7 @@ import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.common.util.CollectionUtils;
 import com.shallowinggg.doran.common.util.StringUtils;
 import com.shallowinggg.doran.common.util.retry.*;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +16,7 @@ import javax.jms.*;
 import java.lang.IllegalStateException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +32,8 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
     private final Charset UTF_8 = StandardCharsets.UTF_8;
 
     public ActiveMQConsumer(String name, final ActiveMQConfig config,
-                            ThreadPoolExecutor executor, Set<MessageListener> listeners) {
+                            @Nullable ThreadPoolExecutor executor,
+                            @Nullable List<MessageListener> listeners) {
         super(executor, listeners);
         Assert.hasText(name, "'name' must has text");
         Assert.notNull(config, "'config' must not be null");

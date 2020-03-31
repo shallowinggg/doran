@@ -1,16 +1,19 @@
 package com.shallowinggg.doran.client.consumer;
 
 import com.rabbitmq.client.*;
-import com.shallowinggg.doran.client.common.*;
+import com.shallowinggg.doran.client.common.ConnectionFactoryCache;
+import com.shallowinggg.doran.client.common.Message;
+import com.shallowinggg.doran.client.common.RetryCountExhaustedException;
 import com.shallowinggg.doran.common.RabbitMQConfig;
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.common.util.CollectionUtils;
 import com.shallowinggg.doran.common.util.retry.*;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +33,8 @@ public class RabbitMQConsumer extends AbstractBuiltInConsumer {
             .build();
 
     public RabbitMQConsumer(String name, RabbitMQConfig config,
-                            ThreadPoolExecutor executor, Set<MessageListener> listeners) {
+                            @Nullable ThreadPoolExecutor executor,
+                            @Nullable List<MessageListener> listeners) {
         super(executor, listeners);
         Assert.hasText(name, "'name' must has text");
         Assert.notNull(config, "'config' must not be null");

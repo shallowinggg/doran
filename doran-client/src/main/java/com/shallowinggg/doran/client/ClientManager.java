@@ -1,11 +1,13 @@
 package com.shallowinggg.doran.client;
 
-import com.codahale.metrics.Meter;
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
+import com.shallowinggg.doran.client.consumer.MessageListener;
 import com.shallowinggg.doran.common.EmptyMQConfig;
 import com.shallowinggg.doran.common.MQConfig;
 import com.shallowinggg.doran.common.exception.ConfigNotExistException;
 import com.shallowinggg.doran.common.util.Assert;
+import com.shallowinggg.doran.common.util.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +49,8 @@ public class ClientManager {
                 return producers.get(configName);
             }
             String name = configName + PRODUCER_METER_SUFFIX;
-            final Meter meter = producerMetricRegistry.meter(name);
-            final DefaultProducer producer = new DefaultProducer(name, configName, meter);
+            final Counter counter = consumerMetricRegistry.counter(name);
+            final DefaultProducer producer = new DefaultProducer(name, configName, counter);
             final MQConfig config = getConfig(configName, timeoutMillis);
             producer.setMqConfig(config);
             producers.putIfAbsent(configName, producer);
@@ -65,8 +67,29 @@ public class ClientManager {
             if (consumers.containsKey(configName)) {
                 return consumers.get(configName);
             }
-            final Meter meter = consumerMetricRegistry.meter(configName + CONSUMER_METER_SUFFIX);
-            final DefaultConsumer consumer = new DefaultConsumer(configName, meter);
+            String name = configName + PRODUCER_METER_SUFFIX;
+            final Counter counter = consumerMetricRegistry.counter(name);
+            final DefaultConsumer consumer = new DefaultConsumer(name, counter);
+            final MQConfig config = getConfig(configName, timeoutMillis);
+            consumer.setMqConfig(config);
+            consumers.put(configName, consumer);
+            return consumer;
+        }
+    }
+
+    public DefaultConsumer createConsumer(String configName, List<MessageListener> listeners, int timeoutMillis) {
+        Assert.hasText(configName);
+        Assert.isTrue(CollectionUtils.isNotEmpty(listeners), "'listeners' must not be empty");
+        if (consumers.containsKey(configName)) {
+            return consumers.get(configName);
+        }
+        synchronized (configName.intern()) {
+            if (consumers.containsKey(configName)) {
+                return consumers.get(configName);
+            }
+            String name = configName + PRODUCER_METER_SUFFIX;
+            final Counter counter = consumerMetricRegistry.counter(name);
+            final DefaultConsumer consumer = new DefaultConsumer(name, counter, listeners);
             final MQConfig config = getConfig(configName, timeoutMillis);
             consumer.setMqConfig(config);
             consumers.put(configName, consumer);

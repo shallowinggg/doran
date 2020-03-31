@@ -12,8 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jms.JMSException;
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -21,7 +19,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * @author shallowinggg
@@ -100,35 +97,28 @@ public class ConnectionFactoryCache {
             com.rabbitmq.client.ConnectionFactory connectionFactory = getRabbitMQConnectionFactory(uri);
             try {
                 buildConnectionRetryer.call(() -> {
-                    try {
-                        com.rabbitmq.client.Connection connection = connectionFactory.newConnection();
-                        AutorecoveringConnection recoverConnection = (AutorecoveringConnection) connection;
-                        recoverConnection.addRecoveryListener(new RecoveryListener() {
-                            @Override
-                            public void handleRecovery(Recoverable recoverable) {
-                                if (LOGGER.isErrorEnabled()) {
-                                    LOGGER.error("Connection {} lost connection", recoverable);
-                                }
+                    com.rabbitmq.client.Connection connection = connectionFactory.newConnection();
+                    AutorecoveringConnection recoverConnection = (AutorecoveringConnection) connection;
+                    recoverConnection.addRecoveryListener(new RecoveryListener() {
+                        @Override
+                        public void handleRecovery(Recoverable recoverable) {
+                            if (LOGGER.isErrorEnabled()) {
+                                LOGGER.error("Connection {} lost connection", recoverable);
                             }
+                        }
 
-                            @Override
-                            public void handleRecoveryStarted(Recoverable recoverable) {
-                                if (LOGGER.isInfoEnabled()) {
-                                    LOGGER.info("Connection {} recover success", recoverable);
-                                }
+                        @Override
+                        public void handleRecoveryStarted(Recoverable recoverable) {
+                            if (LOGGER.isInfoEnabled()) {
+                                LOGGER.info("Connection {} recover success", recoverable);
                             }
-                        });
-                        rabbitMQCache.put(name, connection);
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("Create rabbitmq connection success, uri: {}", uri);
                         }
-                        return null;
-                    } catch (IOException | TimeoutException e) {
-                        if (LOGGER.isWarnEnabled()) {
-                            LOGGER.warn("Create rabbitmq connection fail, uri: {}, retry", uri, e);
-                        }
-                        throw e;
+                    });
+                    rabbitMQCache.put(name, connection);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Create rabbitmq connection success, uri: {}", uri);
                     }
+                    return null;
                 });
             } catch (ExecutionException e) {
                 // won't goto this branch
@@ -179,30 +169,23 @@ public class ConnectionFactoryCache {
             }
             try {
                 buildConnectionRetryer.call(() -> {
-                    try {
-                        String username = config.getUsername();
-                        String password = config.getPassword();
-                        javax.jms.Connection connection = factory.createConnection(username, password);
-                        if(clientId != null) {
-                            connection.setClientID(clientId);
-                        }
-                        connection.start();
-                        connection.setExceptionListener(e -> {
-                            if (LOGGER.isErrorEnabled()) {
-                                LOGGER.error("ActiveMQ connection fail", e);
-                            }
-                        });
-                        activeMQCache.put(name, connection);
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("Create activemq connection success, uri: {}", uri);
-                        }
-                        return null;
-                    } catch (JMSException e) {
-                        if (LOGGER.isWarnEnabled()) {
-                            LOGGER.warn("Create activemq connection fail, uri: {}, retry", uri, e);
-                        }
-                        throw e;
+                    String username = config.getUsername();
+                    String password = config.getPassword();
+                    javax.jms.Connection connection = factory.createConnection(username, password);
+                    if(clientId != null) {
+                        connection.setClientID(clientId);
                     }
+                    connection.start();
+                    connection.setExceptionListener(e -> {
+                        if (LOGGER.isErrorEnabled()) {
+                            LOGGER.error("ActiveMQ connection fail", e);
+                        }
+                    });
+                    activeMQCache.put(name, connection);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Create activemq connection success, uri: {}", uri);
+                    }
+                    return null;
                 });
             } catch (ExecutionException e) {
                 // won't goto this branch
