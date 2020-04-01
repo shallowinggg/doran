@@ -16,7 +16,9 @@
  */
 package com.shallowinggg.doran.transport.protocol;
 
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -24,14 +26,20 @@ import java.util.List;
 
 public abstract class RemotingSerializable {
     private final static Charset CHARSET_UTF8 = StandardCharsets.UTF_8;
+    private final static ObjectMapper MAPPER = new ObjectMapper();
 
     public static byte[] encode(final Object obj) {
-        final String json = toJson(obj, false);
+        final String json = toJson(obj);
         return json.getBytes(CHARSET_UTF8);
     }
 
-    public static String toJson(final Object obj, boolean prettyFormat) {
-        return JSON.toJSONString(obj, prettyFormat);
+    public static String toJson(final Object obj) {
+        try {
+            return MAPPER.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            // won't happen
+        }
+        return "";
     }
 
     public static <T> T decode(final byte[] data, Class<T> classOfT) {
@@ -40,7 +48,11 @@ public abstract class RemotingSerializable {
     }
 
     public static <T> T fromJson(String json, Class<T> classOfT) {
-        return JSON.parseObject(json, classOfT);
+        try {
+            return MAPPER.readValue(json, classOfT);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public byte[] encode() {
@@ -52,15 +64,16 @@ public abstract class RemotingSerializable {
     }
 
     public String toJson() {
-        return toJson(false);
+        return toJson(this);
     }
 
-    public String toJson(final boolean prettyFormat) {
-        return toJson(this, prettyFormat);
-    }
-
-    public static <T> List<T> decodeArray(final byte[] data, Class<T> clazz) {
+    public static <T> List<T> decodeArray(final byte[] data) {
         final String json = new String(data, CHARSET_UTF8);
-        return JSON.parseArray(json, clazz);
+        try {
+            return MAPPER.readValue(json, new TypeReference<List<T>>() {
+            });
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

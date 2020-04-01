@@ -1,11 +1,9 @@
 package com.shallowinggg.doran.common;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.shallowinggg.doran.common.util.Assert;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Special config for ActiveMQ.
@@ -14,88 +12,114 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ActiveMQConfig extends MQConfig {
 
-    private final String destinationName;
+    /**
+     * MQ server username
+     */
+    private String username;
 
-    private final DestinationType destinationType;
+    /**
+     * MQ server password
+     */
+    private String password;
+
+    /**
+     * The name of the destination
+     */
+    private String destinationName;
+
+    /**
+     * The type of the destination
+     */
+    private DestinationType destinationType;
+
+
+    // for consumer
 
     @Nullable
-    private final String clientId;
+    private String clientId;
 
     @Nullable
-    private final String selector;
+    private String selector;
 
-    public ActiveMQConfig(String name, MQType type, String uri, String username, String password, int threadNum,
-                          long timestamp, String json) throws JsonProcessingException {
-        super(name, type, uri, username, password, threadNum, timestamp);
-
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode extFields = mapper.readTree(json);
-        String destinationName = extFields.get("destinationName").asText();
-        DestinationType destinationType = DestinationType.valueOf(extFields.get("destinationType").asText());
-        String clientId = extFields.get("clientId").asText();
-        String selector = extFields.get("selector").asText();
-        this.destinationName = destinationName;
-        this.destinationType = destinationType;
-        this.clientId = clientId;
-        this.selector = selector;
-    }
-
-    public ActiveMQConfig(String name, MQType type, String uri, String username, String password, long timestamp,
-                          String destinationName, DestinationType destinationType,
-                          @Nullable String clientId, @Nullable String selector) {
-        super(name, type, uri, username, password, timestamp);
-
-        this.destinationName = destinationName;
-        this.destinationType = destinationType;
-        this.clientId = clientId;
-        this.selector = selector;
-    }
-
-    public ActiveMQConfig(String name, MQType type, String uri, String username, String password, int threadNum,
-                             long timestamp, String destinationName, DestinationType destinationType,
-                          @Nullable String clientId, @Nullable String selector) {
-        super(name, type, uri, username, password, threadNum, timestamp);
-
-        this.destinationName = destinationName;
-        this.destinationType = destinationType;
-        this.clientId = clientId;
-        this.selector = selector;
+    public ActiveMQConfig() {
+        setType(MQType.ActiveMQ);
     }
 
     @Override
-    public String extFieldsToJson() {
-        ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put("destinationName", getDestinationName());
-        node.put("destinationType", getDestinationType().name);
-        node.put("clientId", getClientId());
-        node.put("selector", getSelector());
-        return node.toString();
+    public boolean equalsIgnoreThreadNum(MQConfig other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        ActiveMQConfig that = (ActiveMQConfig) other;
+        if (getThreadNum() != that.getThreadNum()) {
+            return false;
+        }
+
+        return Objects.equals(getName(), that.getName()) &&
+                Objects.equals(getUri(), that.getUri()) &&
+                username.equals(that.username) &&
+                password.equals(that.password) &&
+                destinationName.equals(that.destinationName) &&
+                destinationType == that.destinationType &&
+                Objects.equals(clientId, that.clientId) &&
+                Objects.equals(selector, that.selector);
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public enum DestinationType {
         /**
          * PTP mode
          */
-        PTP("PTP"),
+        PTP,
         /**
          * Topic mode
          */
-        TOPIC("TOPIC");
-
-        private final String name;
-
-        DestinationType(String name) {
-            this.name = name;
-        }
+        TOPIC
     }
-
 
     public String getDestinationName() {
         return destinationName;
     }
 
+    public void setDestinationName(String destinationName) {
+        Assert.notNull(destinationName);
+        this.destinationName = destinationName;
+    }
+
     public DestinationType getDestinationType() {
         return destinationType;
+    }
+
+    public void setDestinationType(DestinationType destinationType) {
+        Assert.notNull(destinationType);
+        this.destinationType = destinationType;
+    }
+
+    @Nullable
+    public String getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(@Nullable String clientId) {
+        this.clientId = clientId;
     }
 
     @Nullable
@@ -103,8 +127,21 @@ public class ActiveMQConfig extends MQConfig {
         return selector;
     }
 
-    @Nullable
-    public String getClientId() {
-        return clientId;
+    public void setSelector(@Nullable String selector) {
+        this.selector = selector;
     }
+
+    @Override
+    public String toString() {
+        return "ActiveMQConfig{" +
+                "username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", destinationName='" + destinationName + '\'' +
+                ", destinationType=" + destinationType +
+                ", clientId='" + clientId + '\'' +
+                ", selector='" + selector + '\'' +
+                "} " + super.toString();
+    }
+
+
 }

@@ -1,16 +1,16 @@
 package com.shallowinggg.doran.common;
 
-import com.shallowinggg.doran.common.util.JarDependent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 public class JarDependentTest {
 
     @Test
-    public void testMQType() {
-        MQType type = JarDependent.mqType();
-        System.out.println(type);
-        assert type != null;
+    public void testMQType() throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
 
-
+        ActiveMQConfig.DestinationType type = ActiveMQConfig.DestinationType.valueOf("TOPIC");
     }
+
 }

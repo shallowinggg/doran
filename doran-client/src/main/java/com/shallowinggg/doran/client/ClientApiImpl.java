@@ -1,6 +1,5 @@
 package com.shallowinggg.doran.client;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.shallowinggg.doran.client.common.RetryCountExhaustedException;
 import com.shallowinggg.doran.client.resolver.DefaultInetAddressChecker;
 import com.shallowinggg.doran.client.resolver.InetAddressChecker;
@@ -11,7 +10,6 @@ import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.common.util.PojoHeaderConverter;
 import com.shallowinggg.doran.common.util.retry.*;
 import com.shallowinggg.doran.transport.RemotingClient;
-import com.shallowinggg.doran.transport.exception.RemotingCommandException;
 import com.shallowinggg.doran.transport.netty.NettyClientConfig;
 import com.shallowinggg.doran.transport.netty.NettyRemotingClient;
 import com.shallowinggg.doran.transport.protocol.RemotingCommand;
@@ -99,31 +97,22 @@ public class ClientApiImpl {
         try {
             RETRY_TASK.get().call(() -> {
                 RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.REGISTER_CLIENT, header);
-                try {
-                    RemotingCommand response = this.client.invokeSync(null, request, timeoutMillis);
-                    switch (response.getCode()) {
-                        case ResponseCode.SUCCESS:
-                            RegisterClientResponseHeader responseHeader = response.decodeCommandCustomHeader(RegisterClientResponseHeader.class);
-                            if (LOGGER.isInfoEnabled()) {
-                                LOGGER.info("Register client {} to server {} success", clientId, serverAddr);
-                            }
+                RemotingCommand response = this.client.invokeSync(null, request, timeoutMillis);
+                switch (response.getCode()) {
+                    case ResponseCode.SUCCESS:
+                        RegisterClientResponseHeader responseHeader = response.decodeCommandCustomHeader(RegisterClientResponseHeader.class);
+                        if (LOGGER.isInfoEnabled()) {
+                            LOGGER.info("Register client {} to server {} success", clientId, serverAddr);
+                        }
 
-                            int configNums = responseHeader.getHoldingMqConfigNums();
-                            if (configNums != 0) {
-                                List<MQConfig> configs = RemotingSerializable.decodeArray(response.getBody(), MQConfig.class);
-                                this.controller.getConfigManager().registerMqConfigs(configs);
-                            }
-                            return null;
-                        default:
-                            throw new UnexpectedResponseException(response.getCode(), "REGISTER_CLIENT");
-                    }
-                } catch (InterruptedException | RemotingCommandException e) {
-                    // this exceptions will be handle in RetryException catch block
-                    // if retry fail.
-                    if (LOGGER.isWarnEnabled()) {
-                        LOGGER.warn("Register client {} to server {} fail", clientId, serverAddr, e);
-                    }
-                    throw e;
+                        int configNums = responseHeader.getHoldingMqConfigNums();
+                        if (configNums != 0) {
+                            List<MQConfig> configs = RemotingSerializable.decodeArray(response.getBody());
+                            this.controller.getConfigManager().registerMqConfigs(configs);
+                        }
+                        return null;
+                    default:
+                        throw new UnexpectedResponseException(response.getCode(), "REGISTER_CLIENT");
                 }
             });
         } catch (ExecutionException e) {
@@ -169,29 +158,20 @@ public class ClientApiImpl {
         try {
             return (MQConfig) RETRY_TASK.get().call(() -> {
                 RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.REQUEST_CONFIG, header);
-                try {
-                    RemotingCommand response = this.client.invokeSync(null, request, timeoutMillis);
+                RemotingCommand response = this.client.invokeSync(null, request, timeoutMillis);
 
-                    switch (response.getCode()) {
-                        case ResponseCode.SUCCESS:
-                            RequestMQConfigResponseHeader responseHeader = response.decodeCommandCustomHeader(RequestMQConfigResponseHeader.class);
-                            if (LOGGER.isDebugEnabled()) {
-                                LOGGER.debug("Request MQ Config {} success", configName);
-                            }
+                switch (response.getCode()) {
+                    case ResponseCode.SUCCESS:
+                        RequestMQConfigResponseHeader responseHeader = response.decodeCommandCustomHeader(RequestMQConfigResponseHeader.class);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Request MQ Config {} success", configName);
+                        }
 
-                            return PojoHeaderConverter.responseHeader2MQConfig(responseHeader);
-                        case ResponseCode.CONFIG_NOT_EXIST:
-                            throw new ConfigNotExistException(configName);
-                        default:
-                            throw new UnexpectedResponseException(response.getCode(), "REQUEST_CONFIG");
-                    }
-                } catch (InterruptedException | RemotingCommandException | JsonProcessingException e) {
-                    // this exceptions will be handle in RetryException catch block
-                    // if retry fail.
-                    if (LOGGER.isWarnEnabled()) {
-                        LOGGER.warn("Request config {} fail", configName, e);
-                    }
-                    throw e;
+                        return PojoHeaderConverter.responseHeader2MQConfig(responseHeader);
+                    case ResponseCode.CONFIG_NOT_EXIST:
+                        throw new ConfigNotExistException(configName);
+                    default:
+                        throw new UnexpectedResponseException(response.getCode(), "REQUEST_CONFIG");
                 }
             });
         } catch (ExecutionException e) {

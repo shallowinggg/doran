@@ -91,10 +91,6 @@ public abstract class NettyRemotingAbstract {
      */
     protected List<RPCHook> rpcHooks = new ArrayList<>();
 
-    static {
-        NettyLogger.initNettyLogger();
-    }
-
     /**
      * Constructor, specifying capacity of one-way and asynchronous semaphores.
      *

@@ -4,6 +4,7 @@ import com.shallowinggg.doran.common.util.Assert;
 import io.netty.util.concurrent.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 /**
@@ -23,13 +24,13 @@ public class ReInputEventExecutorGroup extends MultithreadEventExecutorGroup {
     }
 
     @Override
-    protected EventExecutor newChild(ThreadFactory threadFactory, Object... args) throws Exception {
-        return new ReInputEventExecutor(this, threadFactory, (Integer) args[0], (RejectedExecutionHandler) args[1]);
+    public EventExecutor next() {
+        return super.next();
     }
 
     @Override
-    public EventExecutor next() {
-        return super.next();
+    protected EventExecutor newChild(Executor executor, Object... args) throws Exception {
+        return new ReInputEventExecutor(this, executor, (Integer)args[0], (RejectedExecutionHandler)args[1]);
     }
 
     /**
@@ -42,7 +43,7 @@ public class ReInputEventExecutorGroup extends MultithreadEventExecutorGroup {
      */
     public void setTransferGroup(@NotNull final EventExecutorGroup transferGroup) {
         Assert.notNull(transferGroup, "'transferGroup' must not be null");
-        for (EventExecutor e : children()) {
+        for (EventExecutor e : this) {
             ((ReInputEventExecutor) e).setTransferGroup(transferGroup);
         }
     }

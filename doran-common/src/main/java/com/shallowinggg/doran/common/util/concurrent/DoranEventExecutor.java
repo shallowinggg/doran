@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 
@@ -28,6 +29,11 @@ public class DoranEventExecutor extends SingleThreadEventExecutor {
     protected DoranEventExecutor(EventExecutorGroup parent, ThreadFactory threadFactory,
                                  int maxPendingTasks, RejectedExecutionHandler rejectedHandler) {
         super(parent, threadFactory, true, maxPendingTasks, rejectedHandler);
+    }
+
+    public DoranEventExecutor(EventExecutorGroup parent, Executor executor, int maxPendingTasks,
+                                RejectedExecutionHandler rejectedExecutionHandler) {
+        super(parent, executor, true, maxPendingTasks, rejectedExecutionHandler);
     }
 
     @Override

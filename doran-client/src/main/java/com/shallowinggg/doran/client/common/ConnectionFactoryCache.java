@@ -3,6 +3,7 @@ package com.shallowinggg.doran.client.common;
 import com.rabbitmq.client.Recoverable;
 import com.rabbitmq.client.RecoveryListener;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
+import com.shallowinggg.doran.common.ActiveMQConfig;
 import com.shallowinggg.doran.common.MQConfig;
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.common.util.StringUtils;
@@ -155,7 +156,7 @@ public class ConnectionFactoryCache {
         }
     }
 
-    public javax.jms.Connection getActiveMQConnection(MQConfig config, @Nullable String clientId) {
+    public javax.jms.Connection getActiveMQConnection(ActiveMQConfig config, @Nullable String clientId) {
         final String name = config.getName();
         if (activeMQCache.containsKey(name)) {
             return activeMQCache.get(name);

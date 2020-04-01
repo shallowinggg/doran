@@ -1,26 +1,30 @@
 package com.shallowinggg.doran.common.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shallowinggg.doran.common.*;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * @author shallowinggg
  */
 public final class PojoHeaderConverter {
-    private PojoHeaderConverter() {}
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    public static <T extends MQConfig> void mqConfig2ResponseHeader(T config,
-                                                                    RequestMQConfigResponseHeader header) {
+    private PojoHeaderConverter() {
+    }
+
+    public static <T extends MQConfig> void mqConfig2ResponseHeader(@NotNull T config,
+                                                                    @NotNull RequestMQConfigResponseHeader header) {
         Assert.notNull(config, "'config' must not be null");
         Assert.notNull(header, "'header' must not be null");
-        header.setName(config.getName());
-        header.setType(config.getType().name());
-        header.setUri(config.getUri());
-        header.setUsername(config.getUsername());
-        header.setPassword(config.getPassword());
-        header.setThreadNum(config.getThreadNum());
-        header.setTimestamp(config.getTimestamp());
-        header.setExtFieldsJson(config.extFieldsToJson());
+        try {
+            String json = MAPPER.writeValueAsString(config);
+            header.setType(config.getType().name());
+            header.setConfig(json);
+        } catch (JsonProcessingException e) {
+            // won't happen
+        }
     }
 
     public static MQConfig responseHeader2MQConfig(RequestMQConfigResponseHeader header)
@@ -29,11 +33,9 @@ public final class PojoHeaderConverter {
         MQType type = MQType.parse(header.getType());
         switch (type) {
             case RabbitMQ:
-                return new RabbitMQConfig(header.getName(), type, header.getUri(), header.getUsername(),
-                        header.getPassword(), header.getThreadNum(), header.getTimestamp(), header.getExtFieldsJson());
+                return MAPPER.readValue(header.getConfig(), RabbitMQConfig.class);
             case ActiveMQ:
-                return new ActiveMQConfig(header.getName(), type, header.getUri(), header.getUsername(),
-                        header.getPassword(), header.getThreadNum(), header.getTimestamp(), header.getExtFieldsJson());
+                return MAPPER.readValue(header.getConfig(), ActiveMQConfig.class);
             default:
                 return new EmptyMQConfig();
         }

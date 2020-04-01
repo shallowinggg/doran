@@ -9,10 +9,7 @@ import io.netty.util.internal.SystemPropertyUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 
 /**
  * @author shallowinggg
@@ -31,6 +28,11 @@ public class ReInputEventExecutor extends SingleThreadEventExecutor {
     protected ReInputEventExecutor(EventExecutorGroup parent, ThreadFactory threadFactory,
                                    int maxPendingTasks, RejectedExecutionHandler rejectedHandler) {
         super(parent, threadFactory, true, maxPendingTasks, rejectedHandler);
+    }
+
+    public ReInputEventExecutor(EventExecutorGroup parent, Executor executor, int maxPendingTasks,
+                                RejectedExecutionHandler rejectedExecutionHandler) {
+        super(parent, executor, true, maxPendingTasks, rejectedExecutionHandler);
     }
 
     @Override

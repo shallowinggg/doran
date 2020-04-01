@@ -16,7 +16,7 @@
  */
 package com.shallowinggg.doran.transport.protocol;
 
-import com.alibaba.fastjson.annotation.JSONField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.shallowinggg.doran.transport.CommandCustomHeader;
 import com.shallowinggg.doran.transport.annotation.CFNotNull;
 import com.shallowinggg.doran.transport.common.RemotingHelper;
@@ -443,7 +443,7 @@ public class RemotingCommand {
         this.flag |= bits;
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public boolean isOnewayRPC() {
         int bits = 1 << RPC_ONEWAY;
         return (this.flag & bits) == bits;
@@ -457,7 +457,7 @@ public class RemotingCommand {
         this.code = code;
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public RemotingCommandType getType() {
         if (this.isResponseType()) {
             return RemotingCommandType.RESPONSE_COMMAND;
@@ -466,7 +466,7 @@ public class RemotingCommand {
         return RemotingCommandType.REQUEST_COMMAND;
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public boolean isResponseType() {
         int bits = 1 << RPC_TYPE;
         return (this.flag & bits) == bits;

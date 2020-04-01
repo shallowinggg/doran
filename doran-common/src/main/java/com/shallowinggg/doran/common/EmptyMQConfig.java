@@ -6,11 +6,11 @@ package com.shallowinggg.doran.common;
 public class EmptyMQConfig extends MQConfig {
 
     public EmptyMQConfig() {
-        super("empty", MQType.UNKNOWN, "empty", "empty", "empty", 0);
+        setType(MQType.UNKNOWN);
     }
 
     @Override
-    public String extFieldsToJson() {
-        return null;
+    public boolean equalsIgnoreThreadNum(MQConfig other) {
+        return false;
     }
 }

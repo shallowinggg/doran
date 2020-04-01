@@ -2,6 +2,7 @@ package com.shallowinggg.doran.common.util.concurrent;
 
 import io.netty.util.concurrent.*;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 /**
@@ -21,7 +22,7 @@ public class DoranEventExecutorGroup extends MultithreadEventExecutorGroup {
     }
 
     @Override
-    protected EventExecutor newChild(ThreadFactory threadFactory, Object... args) throws Exception {
-        return new DoranEventExecutor(this, threadFactory, (Integer)args[0], (RejectedExecutionHandler)args[1]);
+    protected EventExecutor newChild(Executor executor, Object... objects) throws Exception {
+        return new DoranEventExecutor(this, executor, (Integer)objects[0], (RejectedExecutionHandler)objects[1]);
     }
 }
