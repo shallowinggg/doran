@@ -13,7 +13,7 @@ import java.util.Enumeration;
 /**
  * @author shallowinggg
  */
-public abstract class SystemUtils {
+public final class SystemUtils {
     private static final int IPV4_LENGTH = 4;
 
     public static int getPid() {

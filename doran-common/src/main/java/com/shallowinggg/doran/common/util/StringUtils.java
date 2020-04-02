@@ -5,7 +5,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * @author shallowinggg
  */
-public abstract class StringUtils {
+public final class StringUtils {
+    private StringUtils() {}
 
     /**
      * Check that the given {@code CharSequence} is neither {@code null} nor

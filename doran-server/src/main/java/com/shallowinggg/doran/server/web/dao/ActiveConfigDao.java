@@ -1,6 +1,7 @@
 package com.shallowinggg.doran.server.web.dao;
 
 import com.shallowinggg.doran.server.web.entity.ActiveConfig;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author shallowinggg
@@ -13,6 +14,7 @@ public interface ActiveConfigDao {
      * @param name config name
      * @return ActiveConfig
      */
+    @Nullable
     ActiveConfig selectByName(String name);
 
     /**
@@ -20,22 +22,22 @@ public interface ActiveConfigDao {
      *
      * @param config the config to add
      * @return {@code true} if add success
+     * @throws JsonSerializeException if serialize fail
      */
-    boolean insertActiveConfig(ActiveConfig config);
+    boolean insertActiveConfig(ActiveConfig config) throws JsonSerializeException;
 
     /**
      * Delete active config by its name.
      *
      * @param name config name
-     * @return {@code true} if delete success
      */
-    boolean deleteActiveConfig(String name);
+    void deleteActiveConfig(String name);
 
     /**
      * Update active config.
      *
      * @param config new config
-     * @return {@code true} if update success
+     * @throws JsonSerializeException if serialize fail
      */
-    boolean updateActiveConfig(ActiveConfig config);
+    void updateActiveConfig(ActiveConfig config) throws JsonSerializeException;
 }
