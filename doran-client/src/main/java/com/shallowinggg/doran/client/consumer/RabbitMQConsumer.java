@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author shallowinggg
@@ -74,20 +75,20 @@ public class RabbitMQConsumer extends AbstractBuiltInConsumer {
                                     try {
                                         if (ack) {
                                             if (LOGGER.isDebugEnabled()) {
-                                                LOGGER.debug("RabbitMQ consumer {} consume message {} success",
+                                                LOGGER.debug("'{}' consume message {} success",
                                                         name, message);
                                             }
                                             getChannel().basicAck(id, false);
                                         } else {
                                             if (LOGGER.isErrorEnabled()) {
-                                                LOGGER.error("RabbitMQ consumer {} consume message {} fail, delivery tag: {}",
+                                                LOGGER.error("'{}' consume message {} fail, delivery tag: {}",
                                                         name, message, id);
                                             }
                                             getChannel().basicNack(id, false, false);
                                         }
                                     } catch (IOException e) {
                                         if (LOGGER.isErrorEnabled()) {
-                                            LOGGER.error("Send response to broker fail, consumer: {} delivery tag: {}, ack: {}",
+                                            LOGGER.error("Send response to broker fail, consumer: {}, delivery tag: {}, ack: {}",
                                                     name, id, ack);
                                         }
                                     }
@@ -113,7 +114,7 @@ public class RabbitMQConsumer extends AbstractBuiltInConsumer {
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Create rabbitmq channel for consumer {} fail, retry count {} has exhausted",
+                LOGGER.error("Create rabbitmq channel for consumer '{}' fail, retry count {} has exhausted",
                         name, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
@@ -121,14 +122,14 @@ public class RabbitMQConsumer extends AbstractBuiltInConsumer {
 
         this.channel = channel;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("RabbitMQ consumer {} build success, queue: {}", name, queueName);
+            LOGGER.debug("RabbitMQ consumer '{}' build success, queue: {}", name, queueName);
         }
     }
 
     @Override
     public Message receive() {
         if (this.consumer != null) {
-            throw new IllegalStateException("RabbitMQ consumer " + name + "is configured as async mode");
+            throw new IllegalStateException("RabbitMQ consumer '" + name + "' is configured as async mode");
         }
 
         try {
@@ -146,7 +147,7 @@ public class RabbitMQConsumer extends AbstractBuiltInConsumer {
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("RabbitMQ consumer {} receive message fail, retry count {} has exhausted",
+                LOGGER.error("'{}' receive message fail, retry count {} has exhausted",
                         name, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
@@ -156,5 +157,21 @@ public class RabbitMQConsumer extends AbstractBuiltInConsumer {
     @Override
     public Message receive(long timeout, TimeUnit unit) throws InterruptedException {
         throw new UnsupportedOperationException("RabbitMQ don't support this operation");
+    }
+
+    @Override
+    public void close() {
+        try {
+            this.channel.close();
+        } catch (IOException | TimeoutException e) {
+            if (LOGGER.isWarnEnabled()) {
+                LOGGER.warn("Close channel {} fail, consumer '{}' will be closed when connection close",
+                        channel, name);
+            }
+            return;
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Close consumer '{}' success", name);
+        }
     }
 }

@@ -72,12 +72,12 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
                                 // TODO: use executor() to handle it when thread unsafe skip list can use
                                 resendCache.delete(deliveryTag);
                                 if (LOGGER.isDebugEnabled()) {
-                                    LOGGER.debug("Message {} send success", deliveryTag);
+                                    LOGGER.debug("{} send message {} success", name, deliveryTag);
                                 }
                             } else {
                                 resendCache.delete(deliveryTag, true);
                                 if (LOGGER.isDebugEnabled()) {
-                                    LOGGER.debug("Message {} and earlier send success", deliveryTag);
+                                    LOGGER.debug("{} send message {} and earlier success", name, deliveryTag);
                                 }
                             }
                         }
@@ -86,19 +86,19 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
                         public void handleNack(long deliveryTag, boolean multiple) {
                             if (!multiple) {
                                 if (LOGGER.isWarnEnabled()) {
-                                    LOGGER.warn("Message {} is nack, wait for resend", deliveryTag);
+                                    LOGGER.warn("{} send message {} fail, server nack, wait for resend", name, deliveryTag);
                                 }
                             } else {
                                 if (LOGGER.isWarnEnabled()) {
-                                    LOGGER.warn("Message {} and earlier are nack, wait for resend", deliveryTag);
+                                    LOGGER.warn("{} send message {} and earlier, server nack, wait for resend", name, deliveryTag);
                                 }
                             }
                         }
                     });
                     innerChannel.addReturnListener(r -> {
                         if (LOGGER.isErrorEnabled()) {
-                            LOGGER.error("Message can't be routed, exchange: {}, routingKey: {}",
-                                    r.getExchange(), r.getRoutingKey());
+                            LOGGER.error("{} send message {} fail, message can't be routed, exchange: {}, routingKey: {}",
+                                    name, r.getBody(), r.getExchange(), r.getRoutingKey());
                         }
                     });
                     return innerChannel;
@@ -135,7 +135,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
     @Override
     public void sendMessage(Message message) {
         if (executor() == null) {
-            throw new IllegalStateException("Producer " + name + " has not initialized success, executor is null");
+            throw new IllegalStateException("Producer '" + name + "' has not initialized success, executor is null");
         }
 
         if (executor().inEventLoop()) {
@@ -153,7 +153,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
     @Override
     public void sendMessage(Message message, long delay, TimeUnit unit) {
         if (executor() == null) {
-            throw new IllegalStateException("Producer " + name + " has not initialized success, executor is null");
+            throw new IllegalStateException("Producer '" + name + "' has not initialized success, executor is null");
         }
 
         if (executor().inEventLoop()) {
@@ -189,13 +189,16 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
                 channel.basicPublish(exchangeName, routingKey, properties, content);
                 return null;
             });
+            if(LOGGER.isDebugEnabled()) {
+                LOGGER.debug("'{}' send message {}, content: {}", name, id, msg);
+            }
         } catch (ExecutionException e) {
             // won't goto this branch
             assert false;
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isWarnEnabled()) {
-                LOGGER.warn("Producer {} send message fail, content: {}, retry count {} has exhausted, retry in the future",
+                LOGGER.warn("'{}' send message fail, content: {}, retry count {} has exhausted, retry in the future",
                         name, msg, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
         }
@@ -204,7 +207,7 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
     @Override
     public void startResendTask() {
         if (executor() == null) {
-            throw new IllegalStateException("Producer " + name + " has not initialized success, executor is null");
+            throw new IllegalStateException("Producer '" + name + "' has not initialized success, executor is null");
         }
         executor().scheduleAtFixedRate(this::resendNackMessages, WAIT_ACK_MILLIS, WAIT_ACK_MILLIS, TimeUnit.MILLISECONDS);
     }
@@ -217,9 +220,10 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
             if (LOGGER.isWarnEnabled()) {
                 LOGGER.warn("Close channel {} fail", channel);
             }
+            return;
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Close producer {}", name);
+            LOGGER.debug("Close producer '{}' success", name);
         }
     }
 
@@ -287,13 +291,16 @@ public class RabbitMQProducer extends AbstractBuiltInProducer {
                 channel.basicPublish(exchangeName, routingKey, properties, content);
                 return null;
             });
+            if(LOGGER.isDebugEnabled()) {
+                LOGGER.debug("'{}' send message {}, content: {}", name, id, msg);
+            }
         } catch (ExecutionException e) {
             // won't goto this branch
             assert false;
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isWarnEnabled()) {
-                LOGGER.warn("Producer {} resend message fail, content: {}, retry count {} has exhausted, retry in the future",
+                LOGGER.warn("'{}' resend message fail, content: {}, retry count {} has exhausted, retry in the future",
                         name, msg, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
         }

@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -46,16 +46,15 @@ import java.util.function.Supplier;
  */
 public class Message implements Serializable {
     private static final Charset UTF_8 = StandardCharsets.UTF_8;
-    private static final Supplier<Message> EMPTY_MESSAGE = () -> new Message(null, null);
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    private static final Map<String, String> EMPTY_PROPERTIES = Collections.emptyMap();
+    private static final Supplier<Message> EMPTY_MESSAGE = () -> new Message(EMPTY_PROPERTIES, EMPTY_BYTE_ARRAY);
 
-    @Nullable
     private final Map<String, String> properties;
 
-    @Nullable
     private final byte[] body;
 
-    private Message(@Nullable Map<String, String> properties, @Nullable byte[] body) {
+    private Message(Map<String, String> properties, byte[] body) {
         this.properties = properties;
         this.body = body;
     }
@@ -69,7 +68,7 @@ public class Message implements Serializable {
      */
     public static Message createMessage(@NotNull String body) {
         Assert.notNull(body, "'body' must not be null");
-        return new Message(null, body.getBytes(UTF_8));
+        return new Message(EMPTY_PROPERTIES, body.getBytes(UTF_8));
     }
 
     /**
@@ -84,7 +83,7 @@ public class Message implements Serializable {
     public static Message createMessage(@NotNull Map<String, String> properties) {
         Assert.notNull(properties, "'properties' must not be null");
         checkMap(properties);
-        return new Message(properties, null);
+        return new Message(properties, EMPTY_BYTE_ARRAY);
     }
 
     /**
@@ -149,12 +148,10 @@ public class Message implements Serializable {
         return null;
     }
 
-    @Nullable
     public byte[] getBody() {
         return this.body;
     }
 
-    @Nullable
     public Map<String, String> getProperties() {
         return this.properties;
     }
@@ -168,9 +165,6 @@ public class Message implements Serializable {
             props = DoranSerializable.mapSerialize(properties);
         } else {
             props = EMPTY_BYTE_ARRAY;
-        }
-        if (body == null) {
-            body = EMPTY_BYTE_ARRAY;
         }
         length += props.length;
         length += body.length;
@@ -220,7 +214,7 @@ public class Message implements Serializable {
     public String toString() {
         return "Message{" +
                 "properties=" + properties +
-                ", body=" + Arrays.toString(body) +
+                ", body=" + new String(body) +
                 '}';
     }
 }

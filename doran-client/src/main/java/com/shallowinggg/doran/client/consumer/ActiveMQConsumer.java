@@ -90,7 +90,7 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
                                         }
                                     }
                                     if (LOGGER.isDebugEnabled()) {
-                                        LOGGER.debug("ActiveMQ consumer {} consume message {} success",
+                                        LOGGER.debug("ActiveMQ consumer '{}' consume message {} success",
                                                 name, message);
                                     }
                                 } catch (JMSException e) {
@@ -115,13 +115,13 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
             // handle RuntimeException
             RuntimeException cause = (RuntimeException) e.getCause();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Create activemq consumer {} fail", name, cause);
+                LOGGER.error("Create activemq consumer '{}' fail", name, cause);
             }
             throw cause;
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Create activemq session for consumer {} fail, retry count {} has exhausted",
+                LOGGER.error("Create activemq session for consumer '{}' fail, retry count {} has exhausted",
                         name, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
@@ -132,14 +132,14 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
     @Override
     public Message receive() {
         if (CollectionUtils.isNotEmpty(getMessageListeners())) {
-            throw new IllegalStateException("ActiveMQ consumer " + name + " is configured as async mode");
+            throw new IllegalStateException("ActiveMQ consumer '" + name + "' is configured as async mode");
         }
         try {
             javax.jms.Message msg = consumer.receiveNoWait();
             return convertMessage(msg);
         } catch (JMSException e) {
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("ActiveMQ consumer {} receive message fail", name, e);
+                LOGGER.error("'{}' receive message fail", name, e);
             }
             throw new RuntimeException(e);
         }
@@ -148,7 +148,7 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
     @Override
     public Message receive(long timeout, TimeUnit unit) throws InterruptedException {
         if (CollectionUtils.isNotEmpty(getMessageListeners())) {
-            throw new IllegalStateException("ActiveMQ consumer " + name + " is configured as async mode");
+            throw new IllegalStateException("ActiveMQ consumer '" + name + "' is configured as async mode");
         }
         try {
             javax.jms.Message msg = consumer.receive(unit.toMillis(timeout));
@@ -158,7 +158,7 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
                 throw (InterruptedException) e.getCause();
             }
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("ActiveMQ consumer {} receive message fail", name, e);
+                LOGGER.error("'{}' receive message fail", name, e);
             }
             throw new RuntimeException(e);
         }
@@ -180,18 +180,19 @@ public class ActiveMQConsumer extends AbstractBuiltInConsumer {
         return null;
     }
 
+    @Override
     public void close() {
         try {
             consumer.close();
             session.close();
         } catch (JMSException e) {
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Close activemq consumer and related session {} fail", name);
+                LOGGER.error("Close activemq consumer '{}' and related session fail", name);
             }
             return;
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Close activemq consumer {} success", name);
+            LOGGER.debug("Close activemq consumer '{}' success", name);
         }
     }
 }

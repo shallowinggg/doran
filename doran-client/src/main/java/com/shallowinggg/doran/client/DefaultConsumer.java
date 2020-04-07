@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -63,8 +62,7 @@ public class DefaultConsumer implements MqConfigBean {
 
         this.name = name;
         this.counter = counter;
-        List<MessageListener> temp = new ArrayList<>(listeners.size() + 1);
-        Collections.copy(temp, listeners);
+        List<MessageListener> temp = new ArrayList<>(listeners);
         temp.add(new MetricMessageListener(counter));
         this.listeners = temp;
         this.state = STARTING;
@@ -115,9 +113,16 @@ public class DefaultConsumer implements MqConfigBean {
 
     }
 
+    public Counter getCounter() {
+        return this.counter;
+    }
+
     public void close() {
         this.state = SHUTDOWN;
-
+        executor.shutdown();
+        if(consumer != null) {
+            consumer.close();
+        }
     }
 
     private BuiltInConsumer createConsumer(MQConfig config) {

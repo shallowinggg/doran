@@ -17,4 +17,9 @@ public interface BuiltInConsumer {
     List<MessageListener> getMessageListeners();
 
     ThreadPoolExecutor executor();
+
+    /**
+     * Close this consumer and release all resources it used.
+     */
+    void close();
 }

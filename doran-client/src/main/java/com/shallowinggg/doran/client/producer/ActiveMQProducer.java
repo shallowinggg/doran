@@ -63,7 +63,7 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
                             destination = innerSession.createTopic(config.getDestinationName());
                             break;
                         default:
-                            throw new IllegalArgumentException("Invalid destination type " + config.getDestinationType());
+                            throw new IllegalArgumentException("Invalid destination type: " + config.getDestinationType());
                     }
                     MessageProducer producer = innerSession.createProducer(destination);
                     producer.setDeliveryMode(DeliveryMode.PERSISTENT);
@@ -80,13 +80,13 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
             // handle RuntimeException
             RuntimeException cause = (RuntimeException) e.getCause();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Create activemq producer {} fail", name, cause);
+                LOGGER.error("Create activemq producer '{}' fail", name, cause);
             }
             throw cause;
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Create activemq producer {} fail, retry count {} has exhausted",
+                LOGGER.error("Create activemq producer '{}' fail, retry count {} has exhausted",
                         name, attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
             throw new RetryCountExhaustedException((int) attempt.getAttemptNumber(), attempt.getExceptionCause());
@@ -95,7 +95,7 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
         this.name = name;
         this.session = session;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("ActiveMQ producer {} build success, {} name: {}",
+            LOGGER.debug("ActiveMQ producer '{}' build success, {} name: {}",
                     name, config.getDestinationType(), config.getDestinationName());
         }
     }
@@ -103,7 +103,7 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
     @Override
     public void sendMessage(Message message) {
         if (executor() == null) {
-            throw new IllegalStateException("Producer " + name + " has not initialized success, executor is null");
+            throw new IllegalStateException("Producer '" + name + "' has not initialized success, executor is null");
         }
 
         if (executor().inEventLoop()) {
@@ -124,6 +124,9 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
                 producer.send(innerMsg);
                 return null;
             });
+            if(LOGGER.isDebugEnabled()) {
+                LOGGER.debug("'{}' send message {} success", name, msg);
+            }
         } catch (JMSException e) {
             // won't goto this branch
             // TextMessage won't be read-only
@@ -134,7 +137,7 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isWarnEnabled()) {
-                LOGGER.warn("Producer {} send message fail, content: {}, retry count {} has exhausted, retry in the future",
+                LOGGER.warn("'{}' send message fail, content: {}, retry count {} has exhausted, retry in the future",
                         name, getText(msg), attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
 
@@ -147,7 +150,7 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
     @Override
     public void sendMessage(Message message, long delay, TimeUnit unit) {
         if (executor() == null) {
-            throw new IllegalStateException("Producer " + name + " has not initialized success, executor is null");
+            throw new IllegalStateException("Producer '" + name + "' has not initialized success, executor is null");
         }
 
         if (executor().inEventLoop()) {
@@ -170,6 +173,10 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
                 producer.send(innerMsg);
                 return null;
             });
+            if(LOGGER.isDebugEnabled()) {
+                LOGGER.debug("'{}' send delay message {} success, delay: {} ms",
+                        name, msg, time);
+            }
         } catch (JMSException e) {
             // won't goto this branch
             // TextMessage won't be read-only
@@ -180,7 +187,7 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isWarnEnabled()) {
-                LOGGER.warn("Producer {} send message fail, content: {}, retry count {} has exhausted, retry in the future",
+                LOGGER.warn("'{}' send message fail, content: {}, retry count {} has exhausted, retry in the future",
                         name, getText(msg), attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
 
@@ -196,6 +203,9 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
                 producer.send(message);
                 return null;
             });
+            if(LOGGER.isDebugEnabled()) {
+                LOGGER.debug("'{}' resend message {} success", name, message);
+            }
             return true;
         } catch (ExecutionException e) {
             // handle RuntimeException for producer#send(TextMessage)
@@ -203,7 +213,7 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
         } catch (RetryException e) {
             Attempt<?> attempt = e.getLastFailedAttempt();
             if (LOGGER.isWarnEnabled()) {
-                LOGGER.warn("Producer {} send message fail, content: {}, retry count {} has exhausted, retry in the future",
+                LOGGER.warn("'{}' send message fail, content: {}, retry count {} has exhausted, retry in the future",
                         name, getText(message), attempt.getAttemptNumber(), attempt.getExceptionCause());
             }
         }
@@ -213,7 +223,7 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
     @Override
     public void startResendTask() {
         if (executor() == null) {
-            throw new IllegalStateException("Producer " + name + " has not initialized success, executor is null");
+            throw new IllegalStateException("Producer '" + name + "' has not initialized success, executor is null");
         }
         executor().scheduleAtFixedRate(this::resendNackMessages, WAIT_ACK_MILLIS, WAIT_ACK_MILLIS, TimeUnit.MILLISECONDS);
     }
@@ -225,12 +235,12 @@ public class ActiveMQProducer extends AbstractBuiltInProducer {
             session.close();
         } catch (JMSException e) {
             if (LOGGER.isWarnEnabled()) {
-                LOGGER.warn("Close activemq producer {} and related session fail", name, e);
+                LOGGER.warn("Close activemq producer '{}' and related session fail", name, e);
             }
             return;
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Close activemq producer {} success", name);
+            LOGGER.debug("Close activemq producer '{}' success", name);
         }
     }
 
