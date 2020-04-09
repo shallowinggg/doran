@@ -16,7 +16,6 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class MQConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MQConfigManager.class);
-    private final DoranServer controller;
     private final Map<String, MQConfig> mqConfigMap;
 
     /**
@@ -25,8 +24,7 @@ public class MQConfigManager {
      */
     private final ScheduledExecutorService compensateExecutor;
 
-    public MQConfigManager(final DoranServer controller) {
-        this.controller = controller;
+    public MQConfigManager() {
         this.mqConfigMap = new ConcurrentHashMap<>(32);
         this.compensateExecutor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryImpl("mqConfigCompensateThread_"));

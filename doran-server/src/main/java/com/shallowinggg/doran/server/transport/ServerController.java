@@ -2,6 +2,7 @@ package com.shallowinggg.doran.server.transport;
 
 import com.shallowinggg.doran.common.RequestCode;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
+import com.shallowinggg.doran.server.web.service.ClientService;
 import com.shallowinggg.doran.server.web.service.MQConfigService;
 import com.shallowinggg.doran.transport.netty.NettyClientConfig;
 import com.shallowinggg.doran.transport.netty.NettyRemotingServer;
@@ -18,8 +19,8 @@ import java.util.concurrent.TimeUnit;
  * @author shallowinggg
  */
 @Component
-public class DoranServer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DoranServer.class);
+public class ServerController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerController.class);
 
     /**
      * Handle requests for all clients
@@ -45,15 +46,16 @@ public class DoranServer {
 
     private final ScheduledExecutorService scheduledExecutorService;
 
-    public DoranServer(final ServerConfig serverConfig,
-                       final NettyServerConfig nettyServerConfig,
-                       final NettyClientConfig nettyClientConfig,
-                       final MQConfigService mqConfigService) {
+    public ServerController(final ServerConfig serverConfig,
+                            final NettyServerConfig nettyServerConfig,
+                            final NettyClientConfig nettyClientConfig,
+                            final MQConfigService mqConfigService,
+                            final ClientService clientService) {
         this.serverConfig = serverConfig;
         this.server = new NettyRemotingServer(nettyServerConfig);
         this.serverOuterApi = new ServerOuterApi(this, nettyClientConfig);
         this.clientManager = new ClientManager(this);
-        this.mqConfigManager = new MQConfigManager(this);
+        this.mqConfigManager = new MQConfigManager();
         this.scheduledExecutorService = new ScheduledThreadPoolExecutor(1,
                 new ThreadFactoryImpl("serverScheduledThread_"));
     }

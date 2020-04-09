@@ -19,11 +19,13 @@ import java.io.IOException;
 /**
  * Redis implementation for interface {@link MQConfigDao}.
  * <p>
+ * <pre>
  * Store structure is like this:
  * -------hash------config:${name}-------
  * ----  key: {@link MQType#name()}  ----
  * ----       value: config          ----
  * --------------------------------------
+ * </pre>
  * <p>
  * Every config use a hash key like "{@link #KEY_PREFIX} + config name",
  * and same name config can have multi {@link MQType} configuration.

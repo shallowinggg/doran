@@ -19,7 +19,6 @@ public class ClientManager {
     private static final String CLIENT_EXPIRED_MILLIS_PROPERTY = "com.shallowinggg.doran.server.clientExpiredMillis";
     private static final long DEFAULT_CLIENT_EXPIRED_MILLIS = 1000 * 60 * 2;
     private static final long CLIENT_EXPIRED_MILLIS;
-    private final DoranServer controller;
     private final Map<String, ClientMetaInfo> clientMetaInfoMap;
     private final Map<String, ClientLiveInfo> clientLiveInfoMap;
 
@@ -32,8 +31,7 @@ public class ClientManager {
         }
     }
 
-    public ClientManager(final DoranServer controller) {
-        this.controller = controller;
+    public ClientManager(final ServerController controller) {
         this.clientMetaInfoMap = new ConcurrentHashMap<>(16);
         this.clientLiveInfoMap = new ConcurrentHashMap<>(16);
     }

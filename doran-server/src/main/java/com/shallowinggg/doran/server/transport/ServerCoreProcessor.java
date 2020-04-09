@@ -15,9 +15,9 @@ import java.util.Collection;
  * @author shallowinggg
  */
 public class ServerCoreProcessor implements NettyRequestProcessor {
-    private final DoranServer controller;
+    private final ServerController controller;
 
-    public ServerCoreProcessor(final DoranServer controller) {
+    public ServerCoreProcessor(final ServerController controller) {
         this.controller = controller;
     }
 
