@@ -47,9 +47,10 @@ public interface BuiltInProducer {
      * Send normal message.
      * <p>
      * If send fail at the first time due to network fluctuation,
-     * this message will be resent several times immediately.
+     * this message will be resent several times immediately until
+     * send success.
      * <p>
-     * If MQ Broker send a nack that represent maybe not receive
+     * If MQ Broker send a nack what represents maybe not receive
      * this message, it will be resent in the future again. Default
      * resend time is 3000ms. You can set this value by
      * {@link #WAIT_ACK_MILLIS}.

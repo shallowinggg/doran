@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
-        <module>transport</module>
+        <module>doran-transport</module>
         <module>doran-client</module>
         <module>doran-server</module>
         <module>doran-common</module>
@@ -23,8 +23,10 @@
         <log4j.version>2.9.1</log4j.version>
         <slf4j.version>1.7.25</slf4j.version>
         <netty.version>4.1.34.Final</netty.version>
-        <jackson.version>2.10.3</jackson.version>
+        <jackson.version>2.9.8</jackson.version>
         <jetbrain.annotations.version>13.0</jetbrain.annotations.version>
+        <jsr305.version>3.0.2</jsr305.version>
+        <errorprone.version>2.3.4</errorprone.version>
         <springboot.version>2.1.4.RELEASE</springboot.version>
     </properties>
 
@@ -100,6 +102,16 @@
                 <groupId>org.jetbrains</groupId>
                 <artifactId>annotations</artifactId>
                 <version>${jetbrain.annotations.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+                <version>${jsr305.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>${errorprone.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>

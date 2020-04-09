@@ -1,4 +1,4 @@
-package com.shallowinggg.doran.server;
+package com.shallowinggg.doran.server.transport;
 
 import com.shallowinggg.doran.common.MQConfig;
 

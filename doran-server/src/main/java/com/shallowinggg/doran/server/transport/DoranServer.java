@@ -1,12 +1,14 @@
-package com.shallowinggg.doran.server;
+package com.shallowinggg.doran.server.transport;
 
 import com.shallowinggg.doran.common.RequestCode;
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
+import com.shallowinggg.doran.server.web.service.MQConfigService;
 import com.shallowinggg.doran.transport.netty.NettyClientConfig;
 import com.shallowinggg.doran.transport.netty.NettyRemotingServer;
 import com.shallowinggg.doran.transport.netty.NettyServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -15,8 +17,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author shallowinggg
  */
-public class ServerController {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ServerController.class);
+@Component
+public class DoranServer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DoranServer.class);
 
     /**
      * Handle requests for all clients
@@ -42,9 +45,10 @@ public class ServerController {
 
     private final ScheduledExecutorService scheduledExecutorService;
 
-    public ServerController(final ServerConfig serverConfig,
-                            final NettyServerConfig nettyServerConfig,
-                            final NettyClientConfig nettyClientConfig) {
+    public DoranServer(final ServerConfig serverConfig,
+                       final NettyServerConfig nettyServerConfig,
+                       final NettyClientConfig nettyClientConfig,
+                       final MQConfigService mqConfigService) {
         this.serverConfig = serverConfig;
         this.server = new NettyRemotingServer(nettyServerConfig);
         this.serverOuterApi = new ServerOuterApi(this, nettyClientConfig);

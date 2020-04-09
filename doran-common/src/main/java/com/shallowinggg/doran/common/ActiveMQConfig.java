@@ -42,7 +42,7 @@ public class ActiveMQConfig extends MQConfig {
     private String selector;
 
     public ActiveMQConfig() {
-        setType(MQType.ActiveMQ);
+        super(MQType.ActiveMQ);
     }
 
     @Override

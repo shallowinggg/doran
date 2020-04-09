@@ -1,6 +1,5 @@
 package com.shallowinggg.doran.common.util;
 
-import com.google.common.primitives.Ints;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import org.jetbrains.annotations.Nullable;
 
@@ -112,7 +111,7 @@ public final class CollectionUtils {
 
     static int computeArrayListCapacity(int arraySize) {
         checkNonNegative(arraySize, "arraySize");
-        return Ints.saturatedCast(5L + arraySize + (arraySize / 10));
+        return saturatedCast(5L + arraySize + (arraySize / 10));
     }
 
     @CanIgnoreReturnValue

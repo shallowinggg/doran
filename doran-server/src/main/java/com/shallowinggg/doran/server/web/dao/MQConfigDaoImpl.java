@@ -14,6 +14,8 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.io.IOException;
+
 /**
  * Redis implementation for interface {@link MQConfigDao}.
  * <p>
@@ -99,7 +101,7 @@ public class MQConfigDaoImpl implements MQConfigDao {
                 default:
                     throw new IllegalArgumentException(type);
             }
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             if (LOGGER.isErrorEnabled()) {
                 LOGGER.error("Deserialize mq config {} fail, type: {}, json: {}",
                         mqName, type, json, e);

@@ -1,13 +1,14 @@
 package com.shallowinggg.doran.common;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
+
+import java.io.IOException;
 
 public class JarDependentTest {
 
     @Test
-    public void testMQType() throws JsonProcessingException {
+    public void testMQType() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
 
         RabbitMQConfig config = new RabbitMQConfig();
@@ -20,7 +21,11 @@ public class JarDependentTest {
         config.setRoutingKey("routingkey_demo");
 
         MQConfig mqConfig = config;
-        System.out.println(mapper.writeValueAsString(mqConfig));
+        String json = mapper.writeValueAsString(mqConfig);
+        System.out.println(json);
+
+        RabbitMQConfig des = mapper.readValue(json, RabbitMQConfig.class);
+        System.out.println(des);
     }
 
 }

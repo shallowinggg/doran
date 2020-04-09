@@ -11,6 +11,8 @@ import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.io.IOException;
+
 /**
  * Redis implementation for interface {@link ActiveConfigDao}.
  * <p>
@@ -43,7 +45,7 @@ public class ActiveConfigDaoImpl implements ActiveConfigDao {
         if (json != null) {
             try {
                 return MAPPER.readValue(json, ActiveConfig.class);
-            } catch (JsonProcessingException e) {
+            } catch (IOException e) {
                 if (LOGGER.isErrorEnabled()) {
                     LOGGER.error("Deserialize active config {} fail, json: {}",
                             name, json, e);

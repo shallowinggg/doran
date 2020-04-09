@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -50,7 +51,7 @@ public abstract class RemotingSerializable {
     public static <T> T fromJson(String json, Class<T> classOfT) {
         try {
             return MAPPER.readValue(json, classOfT);
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -72,7 +73,7 @@ public abstract class RemotingSerializable {
         try {
             return MAPPER.readValue(json, new TypeReference<List<T>>() {
             });
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

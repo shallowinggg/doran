@@ -33,7 +33,7 @@ public class RabbitMQConfig extends MQConfig {
     // private String messageProperties;
 
     public RabbitMQConfig() {
-        setType(MQType.RabbitMQ);
+        super(MQType.RabbitMQ);
     }
 
     @Override

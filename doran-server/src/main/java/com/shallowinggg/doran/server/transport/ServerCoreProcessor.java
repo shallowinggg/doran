@@ -1,4 +1,4 @@
-package com.shallowinggg.doran.server;
+package com.shallowinggg.doran.server.transport;
 
 import com.shallowinggg.doran.common.*;
 import com.shallowinggg.doran.common.util.PojoHeaderConverter;
@@ -15,9 +15,9 @@ import java.util.Collection;
  * @author shallowinggg
  */
 public class ServerCoreProcessor implements NettyRequestProcessor {
-    private final ServerController controller;
+    private final DoranServer controller;
 
-    public ServerCoreProcessor(final ServerController controller) {
+    public ServerCoreProcessor(final DoranServer controller) {
         this.controller = controller;
     }
 

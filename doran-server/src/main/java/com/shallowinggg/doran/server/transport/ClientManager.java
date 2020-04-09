@@ -1,9 +1,10 @@
-package com.shallowinggg.doran.server;
+package com.shallowinggg.doran.server.transport;
 
 import com.shallowinggg.doran.common.DataVersion;
 import com.shallowinggg.doran.common.util.Assert;
 import com.shallowinggg.doran.transport.common.RemotingUtil;
 import io.netty.channel.Channel;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,36 +16,23 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ClientManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientManager.class);
-    private static final String CLIENT_EXPIRED_MILLIS_PROPERTY = "doran.server.clientExpiredMillis";
+    private static final String CLIENT_EXPIRED_MILLIS_PROPERTY = "com.shallowinggg.doran.server.clientExpiredMillis";
+    private static final long DEFAULT_CLIENT_EXPIRED_MILLIS = 1000 * 60 * 2;
     private static final long CLIENT_EXPIRED_MILLIS;
-    private final ServerController controller;
+    private final DoranServer controller;
     private final Map<String, ClientMetaInfo> clientMetaInfoMap;
     private final Map<String, ClientLiveInfo> clientLiveInfoMap;
 
     static {
-        int clientExpiredMillis = -1;
-        try {
-            String clientExpiredMillisProperty = System.getProperty(CLIENT_EXPIRED_MILLIS_PROPERTY);
-            if (clientExpiredMillisProperty != null) {
-                clientExpiredMillis = Integer.parseInt(clientExpiredMillisProperty);
-            }
-        } catch (NumberFormatException e) {
-            if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Parse system property {} fail", CLIENT_EXPIRED_MILLIS_PROPERTY, e);
-            }
-        }
+        CLIENT_EXPIRED_MILLIS = SystemPropertyUtil.getLong(CLIENT_EXPIRED_MILLIS_PROPERTY,
+                DEFAULT_CLIENT_EXPIRED_MILLIS);
 
-        if (clientExpiredMillis == -1) {
-            clientExpiredMillis = 1000 * 60 * 2;
-        }
-
-        CLIENT_EXPIRED_MILLIS = clientExpiredMillis;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("-D{}: {} ", CLIENT_EXPIRED_MILLIS_PROPERTY, CLIENT_EXPIRED_MILLIS);
         }
     }
 
-    public ClientManager(final ServerController controller) {
+    public ClientManager(final DoranServer controller) {
         this.controller = controller;
         this.clientMetaInfoMap = new ConcurrentHashMap<>(16);
         this.clientLiveInfoMap = new ConcurrentHashMap<>(16);

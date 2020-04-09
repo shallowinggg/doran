@@ -7,9 +7,9 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="doran-server" />
-        <module name="doran-client" />
-        <module name="transport" />
         <module name="doran-common" />
+        <module name="doran-transport" />
+        <module name="doran-client" />
       </profile>
     </annotationProcessing>
   </component>

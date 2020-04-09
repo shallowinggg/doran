@@ -26,7 +26,7 @@ public abstract class MQConfig implements Cloneable {
     /**
      * The message middleware to use
      */
-    private MQType type;
+    private final MQType type;
 
     /**
      * MQ server uris, you can specify one or more uri and
@@ -50,6 +50,10 @@ public abstract class MQConfig implements Cloneable {
      * It can be used to compare if the topic has been changed.
      */
     private long timestamp;
+
+    protected MQConfig(MQType type) {
+        this.type = type;
+    }
 
     /**
      * Special equals method that ignores {@link #threadNum}
@@ -80,10 +84,10 @@ public abstract class MQConfig implements Cloneable {
         return type;
     }
 
-    public void setType(MQType type) {
-        Assert.notNull(type);
-        this.type = type;
-    }
+//    public void setType(MQType type) {
+//        Assert.notNull(type);
+//        this.type = type;
+//    }
 
     public String getUri() {
         return uri;

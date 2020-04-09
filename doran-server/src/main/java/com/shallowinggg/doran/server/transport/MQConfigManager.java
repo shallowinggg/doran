@@ -1,4 +1,4 @@
-package com.shallowinggg.doran.server;
+package com.shallowinggg.doran.server.transport;
 
 import com.shallowinggg.doran.common.ThreadFactoryImpl;
 import com.shallowinggg.doran.common.util.Assert;
@@ -16,7 +16,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class MQConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MQConfigManager.class);
-    private final ServerController controller;
+    private final DoranServer controller;
     private final Map<String, MQConfig> mqConfigMap;
 
     /**
@@ -25,7 +25,7 @@ public class MQConfigManager {
      */
     private final ScheduledExecutorService compensateExecutor;
 
-    public MQConfigManager(final ServerController controller) {
+    public MQConfigManager(final DoranServer controller) {
         this.controller = controller;
         this.mqConfigMap = new ConcurrentHashMap<>(32);
         this.compensateExecutor = Executors.newSingleThreadScheduledExecutor(

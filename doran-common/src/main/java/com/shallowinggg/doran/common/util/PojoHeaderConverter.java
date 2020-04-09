@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shallowinggg.doran.common.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+
 /**
  * @author shallowinggg
  */
@@ -28,7 +30,7 @@ public final class PojoHeaderConverter {
     }
 
     public static MQConfig responseHeader2MQConfig(RequestMQConfigResponseHeader header)
-            throws JsonProcessingException {
+            throws IOException {
         Assert.notNull(header, "'header' must not be null");
         MQType type = MQType.parse(header.getType());
         switch (type) {

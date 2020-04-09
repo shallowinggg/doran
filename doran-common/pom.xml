@@ -19,6 +19,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <activemq.version>5.15.11</activemq.version>
+        <rabbitmq.version>5.8.0</rabbitmq.version>
     </properties>
 
     <dependencies>
@@ -29,18 +31,8 @@
         </dependency>
         <dependency>
             <groupId>com.shallowinggg</groupId>
-            <artifactId>transport</artifactId>
+            <artifactId>doran-transport</artifactId>
             <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>28.2-jre</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.rholder</groupId>
-            <artifactId>guava-retrying</artifactId>
-            <version>2.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
@@ -53,14 +45,22 @@
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-client</artifactId>
-            <version>5.15.11</version>
+            <version>${activemq.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.rabbitmq</groupId>
             <artifactId>amqp-client</artifactId>
-            <version>5.8.0</version>
+            <version>${rabbitmq.version}</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_annotations</artifactId>
         </dependency>
     </dependencies>
 

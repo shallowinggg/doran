@@ -6,7 +6,7 @@ package com.shallowinggg.doran.common;
 public class EmptyMQConfig extends MQConfig {
 
     public EmptyMQConfig() {
-        setType(MQType.UNKNOWN);
+        super(MQType.UNKNOWN);
     }
 
     @Override
