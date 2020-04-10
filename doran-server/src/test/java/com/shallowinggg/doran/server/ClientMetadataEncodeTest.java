@@ -2,7 +2,7 @@ package com.shallowinggg.doran.server;
 
 import org.junit.Test;
 
-public class ClientMetaInfoEncodeTest {
+public class ClientMetadataEncodeTest {
 
     @Test
     public void testEncodeMqConfigCollection() {

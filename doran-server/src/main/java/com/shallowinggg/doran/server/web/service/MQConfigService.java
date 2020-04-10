@@ -3,7 +3,6 @@ package com.shallowinggg.doran.server.web.service;
 import com.shallowinggg.doran.common.MQConfig;
 import com.shallowinggg.doran.common.MQType;
 import com.shallowinggg.doran.server.web.dao.JsonSerializeException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * @author shallowinggg
@@ -22,30 +21,29 @@ public interface MQConfigService {
     /**
      * Delete a mq config by its name and type.
      *
-     * @param mqName the name of config
+     * @param configName the name of config
      * @param mqType the type of config
      */
-    void deleteMQConfig(String mqName, MQType mqType);
+    void deleteMQConfig(String configName, MQType mqType);
 
     /**
      * Update mq config.
      *
      * @param config the new config
-     * @throws JsonSerializeException if serialize fail
      */
-    void updateMQConfig(MQConfig config) throws JsonSerializeException;
+    void updateMQConfig(MQConfig config);
 
     /**
-     * Select mq config by its name and type.
+     * Select mq config by its name. If it is
+     * non exist, you will get a instance of
+     * {@link com.shallowinggg.doran.common.EmptyMQConfig}.
      *
-     * @param mqName the name of config
-     * @param mqType the type of config
-     * @return mq config
+     * @param configName the name of config
+     * @return mq config if it is exist
      */
-    @Nullable
-    MQConfig selectMQConfig(String mqName, MQType mqType);
+    MQConfig selectMQConfig(String configName);
 
-    void activateMQConfig();
+    void activateMQConfig(String configName, MQType mqType);
 
 
 }

@@ -56,7 +56,7 @@ public class ActiveConfigDaoImpl implements ActiveConfigDao {
     }
 
     @Override
-    public boolean insertActiveConfig(ActiveConfig config) throws JsonSerializeException {
+    public boolean insertActiveConfig(ActiveConfig config) {
         String name = config.getName();
         String json;
         try {
@@ -67,7 +67,7 @@ public class ActiveConfigDaoImpl implements ActiveConfigDao {
             if (LOGGER.isErrorEnabled()) {
                 LOGGER.error("Serialize mq config {} fail", config, e);
             }
-            throw new JsonSerializeException(config, e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -77,7 +77,7 @@ public class ActiveConfigDaoImpl implements ActiveConfigDao {
     }
 
     @Override
-    public void updateActiveConfig(ActiveConfig config) throws JsonSerializeException {
+    public void updateActiveConfig(ActiveConfig config) {
         String name = config.getName();
         String json;
         try {
@@ -87,7 +87,7 @@ public class ActiveConfigDaoImpl implements ActiveConfigDao {
             if (LOGGER.isErrorEnabled()) {
                 LOGGER.error("Serialize mq config {} fail", config, e);
             }
-            throw new JsonSerializeException(config, e);
+            throw new RuntimeException(e);
         }
     }
 }

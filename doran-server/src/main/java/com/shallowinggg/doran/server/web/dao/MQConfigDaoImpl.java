@@ -51,7 +51,7 @@ public class MQConfigDaoImpl implements MQConfigDao {
     }
 
     @Override
-    public boolean insertMQConfig(MQConfig config) throws JsonSerializeException {
+    public boolean insertMQConfig(MQConfig config) {
         String key = KEY_PREFIX + config.getName();
         String type = config.getType().name();
         String json;
@@ -62,7 +62,7 @@ public class MQConfigDaoImpl implements MQConfigDao {
             if (LOGGER.isErrorEnabled()) {
                 LOGGER.error("Serialize mq config {} fail", config, e);
             }
-            throw new JsonSerializeException(config, e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -73,7 +73,7 @@ public class MQConfigDaoImpl implements MQConfigDao {
     }
 
     @Override
-    public void updateMQConfig(MQConfig config) throws JsonSerializeException {
+    public void updateMQConfig(MQConfig config) {
         String key = KEY_PREFIX + config.getName();
         String type = config.getType().name();
         String json;
@@ -84,7 +84,7 @@ public class MQConfigDaoImpl implements MQConfigDao {
             if (LOGGER.isErrorEnabled()) {
                 LOGGER.error("Serialize mq config {} fail", config, e);
             }
-            throw new JsonSerializeException(config, e);
+            throw new RuntimeException(e);
         }
     }
 

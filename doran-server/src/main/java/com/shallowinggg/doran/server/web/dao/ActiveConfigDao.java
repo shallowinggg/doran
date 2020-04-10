@@ -18,13 +18,12 @@ public interface ActiveConfigDao {
     ActiveConfig selectByName(String name);
 
     /**
-     * Insert a new {@link ActiveConfig} if it isn't exist.
+     * Insert a new {@link ActiveConfig}.
      *
      * @param config the config to add
      * @return {@code true} if add success
-     * @throws JsonSerializeException if serialize fail
      */
-    boolean insertActiveConfig(ActiveConfig config) throws JsonSerializeException;
+    boolean insertActiveConfig(ActiveConfig config);
 
     /**
      * Delete active config by its name.
@@ -39,5 +38,5 @@ public interface ActiveConfigDao {
      * @param config new config
      * @throws JsonSerializeException if serialize fail
      */
-    void updateActiveConfig(ActiveConfig config) throws JsonSerializeException;
+    void updateActiveConfig(ActiveConfig config);
 }

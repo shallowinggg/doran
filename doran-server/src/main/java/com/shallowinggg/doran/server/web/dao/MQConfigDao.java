@@ -13,10 +13,9 @@ public interface MQConfigDao {
      * Serialize a new mq config with json and add it.
      *
      * @param config the config to add
-     * @throws JsonSerializeException if serialize fail
      * @return {@code false} if it is exist, otherwise return {@code true}
      */
-    boolean insertMQConfig(MQConfig config) throws JsonSerializeException;
+    boolean insertMQConfig(MQConfig config);
 
     /**
      * Delete a mq config by its name and type.
@@ -30,9 +29,8 @@ public interface MQConfigDao {
      * Update mq config.
      *
      * @param config the new config
-     * @throws JsonSerializeException if serialize fail
      */
-    void updateMQConfig(MQConfig config) throws JsonSerializeException;
+    void updateMQConfig(MQConfig config);
 
     /**
      * Select mq config by its name and type.
