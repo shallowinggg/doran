@@ -1,3 +1,3 @@
 # doran
 
-Develping
+Developing
